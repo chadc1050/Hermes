@@ -5,3 +5,8 @@ additional opt in features to improve performance.
 
 ## Roadmap
 
+## Links
+
+- [WASM Specification](https://webassembly.github.io/spec/core/)
+- [ECMAScript Specification](https://262.ecma-international.org/#sec-ecmascript-language-lexical-grammar)
+
