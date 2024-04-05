@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token {
     Comment(Comment),
     Eof,
@@ -8,29 +9,35 @@ pub enum Token {
     WhiteSpace(WhiteSpace),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WhiteSpace {
-    Space = 0x20,
-    NoBreakSpace = 0xA0,
-    CharacterTabulation = 0x09,
-    LineTabulation = 0x0B,
-    FormFeed = 0x0C,
+    //
+    Space,
+    // \t
+    HorizontalTabulation,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LineTerminator {
-    LineFeed = 0x000A,
-    CarridgeReturn = 0x000D,
+    // \n
+    LineFeed,
+    // \r
+    CarridgeReturn,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Boolean {
     True,
     False,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Comment {
     SingleLine,
     MultiLine,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Literal {
     BigIntSuffix,
     Boolean(Boolean),
@@ -44,12 +51,14 @@ pub enum Literal {
     RegEx,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum NonDecimalIntegerLiteral {
     BigInteger,
     OctalInteger,
     HexInteger,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Keyword {
     Await,
     Break,
@@ -89,6 +98,7 @@ pub enum Keyword {
     Yield,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Punctuation {
     Brace(Brace),
     Bracket(Bracket),
@@ -97,51 +107,96 @@ pub enum Punctuation {
     SemiColon,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Parentheses {
-    Left = 0x28,
-    Right = 0x29,
+    // (
+    Left,
+    // )
+    Right,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Bracket {
-    Left = 0x5B,
-    Right = 0x5D,
+    // [
+    Left,
+    // ]
+    Right,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Brace {
-    Left = 0x7B,
-    Right = 0x7D,
+    // {
+    Left,
+    // }
+    Right,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operator {
+    // +
     Addition,
+    // +=
     AdditonAssignment,
+    // =
     Assignment,
+    // -
     Subtraction,
+    // -=
     SubtractionAssignment,
+    // *
     Multiplication,
+    // *=
     MultiplicationAssignment,
+    // /
     Division,
+    // /=
     DivisionAssignment,
+    // **
+    Exponential,
+    // **=
     ExponentialAssignment,
+    // %
     Mod,
+    // %=
     ModAssignment,
+    // <<
     LeftShift,
+    // <<=
     LeftShiftAssignment,
+    // >>
     RightShift,
+    // >>=
     RightShiftAssignment,
+    // >>>
     ZeroFillRightShift,
+    // >>>=
     UnsignedRightShiftAssignment,
+    // >
     GreaterThan,
+    // <
     LessThan,
+    // ==
     Equal,
+    // ===
+    StrictEquality,
+    // !
     Not,
+    // !=
     NotEqual,
+    // >=
     GreaterThanEqual,
+    // <=
     LessThanEqual,
+    // &&
     And,
+    // &&=
     AndAssignment,
+    // ||
     Or,
+    // ||=
     OrAssignment,
+    // ??
     NullishCoalescingAssignment,
+    // ...
     Spread,
 }

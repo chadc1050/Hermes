@@ -1,30 +1,29 @@
-#[derive(Clone, Copy)]
-pub struct Reader<'a> {
-    source: &'a [u8],
+#[derive(Clone)]
+pub struct Reader {
+    source: Vec<char>,
     pos: usize,
 }
 
-impl<'a> Reader<'a> {
-    pub fn init(source: &'a str) -> Self {
-        Reader {
-            source: source.as_bytes(),
-            pos: 0,
-        }
+impl Reader {
+    pub fn init(source: &str) -> Self {
+        let chars = source.chars().to_owned();
+        let buf = chars.collect::<Vec<char>>();
+        Reader { source: buf, pos: 0 }
     }
 
-    pub fn peek(&self, n: usize) -> Option<&[u8]> {
-        if self.pos + n + 1 >= self.source.len() {
+    pub fn peek(&self, n: usize) -> Option<&[char]> {
+        if self.pos + n - 1 >= self.source.len() {
             return None;
         }
 
         Some(&self.source[self.pos..self.pos + n])
     }
 
-    pub fn next(&mut self) -> Option<&'a u8> {
-        if self.pos + 1 >= self.source.len() {
+    pub fn next(&mut self, n: usize) -> Option<&[char]> {
+        if self.pos + n - 1 >= self.source.len() {
             return None;
         }
         self.pos += 1;
-        Some(&self.source[self.pos + 1])
+        Some(&self.source[self.pos..self.pos + n])
     }
 }

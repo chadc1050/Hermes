@@ -17,7 +17,7 @@ fn main() {
     let args = Cli::parse();
     let file = args.file;
 
-    if !file.ends_with(".hs") {
+    if !file.ends_with(".hermes") {
         panic!("Invalid file type, must be of file type hs!")
     }
 

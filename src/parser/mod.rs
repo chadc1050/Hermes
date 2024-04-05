@@ -7,15 +7,13 @@ mod lexer;
 mod token;
 
 /// Parses source code to AST based on [ECMAScript Lexical Grammar](https://262.ecma-international.org/#sec-intro).
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+pub struct Parser {
+    lexer: Lexer,
 }
 
-impl<'a> Parser<'a> {
-    pub fn init(source: &'a str) -> Self {
-        Parser {
-            lexer: Lexer::init(source),
-        }
+impl Parser {
+    pub fn init(source: &str) -> Self {
+        Parser { lexer: Lexer::init(source) }
     }
 
     pub fn parse(&self) {
