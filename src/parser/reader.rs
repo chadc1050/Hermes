@@ -23,7 +23,32 @@ impl Reader {
         if self.pos + n - 1 >= self.source.len() {
             return None;
         }
-        self.pos += 1;
-        Some(&self.source[self.pos..self.pos + n])
+
+        let next = Some(&self.source[self.pos..self.pos + n]);
+        self.pos += n;
+        next
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Reader;
+
+    #[test]
+    fn test_reader() {
+        let mut reader = Reader::init("javascript");
+        let next = reader.next(4);
+        assert!(next.is_some());
+        assert_eq!(next.unwrap().into_iter().collect::<String>(), String::from("java"));
+        let peek = reader.peek(6);
+        assert!(peek.is_some());
+        assert_eq!(peek.unwrap().into_iter().collect::<String>(), String::from("script"));
+        let next = reader.next(6);
+        assert!(next.is_some());
+        assert_eq!(next.unwrap().into_iter().collect::<String>(), String::from("script"));
+        let peek = reader.peek(1);
+        assert!(peek.is_none());
+        let next = reader.next(1);
+        assert!(next.is_none());
     }
 }
