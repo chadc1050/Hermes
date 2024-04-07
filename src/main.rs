@@ -8,7 +8,7 @@ mod parser;
 
 #[derive(CliParser, Debug)]
 #[command(name = "hermes")]
-#[command(about = "Hermes compiler", long_about = None)]
+#[command(about = "Hermes Compiler", long_about = None)]
 struct Cli {
     file: String,
 }

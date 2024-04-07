@@ -1,32 +1,53 @@
 #[derive(Clone)]
 pub struct Reader {
     source: Vec<char>,
-    pos: usize,
+    cursor: usize,
 }
 
 impl Reader {
     pub fn init(source: &str) -> Self {
         let chars = source.chars().to_owned();
         let buf = chars.collect::<Vec<char>>();
-        Reader { source: buf, pos: 0 }
+        Reader { source: buf, cursor: 0 }
+    }
+
+    pub fn peek_single(&self) -> Option<char> {
+        match self.peek(1) {
+            Some(char) => Some(char[0]),
+            None => None,
+        }
     }
 
     pub fn peek(&self, n: usize) -> Option<&[char]> {
-        if self.pos + n - 1 >= self.source.len() {
+        if self.cursor + n - 1 >= self.source.len() {
             return None;
         }
 
-        Some(&self.source[self.pos..self.pos + n])
+        Some(&self.source[self.cursor..self.cursor + n])
+    }
+
+    pub fn next_single(&mut self) -> Option<char> {
+        let next = match self.next(1) {
+            Some(char) => Some(char[0]),
+            None => None,
+        };
+        self.cursor += 1;
+        next
     }
 
     pub fn next(&mut self, n: usize) -> Option<&[char]> {
-        if self.pos + n - 1 >= self.source.len() {
+        if self.cursor + n - 1 >= self.source.len() {
             return None;
         }
 
-        let next = Some(&self.source[self.pos..self.pos + n]);
-        self.pos += n;
+        let next = Some(&self.source[self.cursor..self.cursor + n]);
+        self.cursor += n;
         next
+    }
+
+    #[inline]
+    pub fn skip(&mut self, n: usize) {
+        self.cursor += n;
     }
 }
 
