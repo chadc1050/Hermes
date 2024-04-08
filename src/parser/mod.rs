@@ -16,7 +16,7 @@ impl<'a> Parser<'a> {
         Parser { lexer: Lexer::init(source) }
     }
 
-    pub fn parse(&self) {
+    pub fn parse(&mut self) {
         let tokens = self.lexer.tokenize();
 
         for token in tokens {}
