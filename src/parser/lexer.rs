@@ -1,111 +1,159 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use super::reader::Reader;
 
-use super::token::{Brace, Bracket, LineTerminator, Literal, Operator, Parentheses, Punctuation, Token, WhiteSpace};
+use super::token::{is_whitespace, Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace};
 
-pub struct Lexer {
-    reader: Reader,
+pub struct Lexer<'a> {
+    reader: Rc<RefCell<Reader>>,
+    last: Option<Token<'a>>,
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     pub fn init(source: &str) -> Self {
-        Lexer { reader: Reader::init(source) }
+        Lexer { reader: Rc::new(RefCell::new(Reader::init(source))), last: None }
     }
 
-    pub fn peek(&self) -> Token {
-        let mut buffer_size = 1;
+    pub fn tokenize(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+
         loop {
-            match self.reader.peek(buffer_size) {
-                Some(chars) => {
-                    let res = self.lex(chars);
-                    match res {
-                        Ok(val) => match val {
-                            Some(token) => return token,
-                            None => buffer_size += 1,
-                        },
-                        Err(err) => panic!("Error occurred parsing! Error: {err}"),
+            match self.lex() {
+                Ok(token) => {
+                    if !is_whitespace(&token) {
+                        tokens.push(token.clone());
+                    }
+                    if token == Token::Eof {
+                        break;
                     }
                 }
-                None => return Token::Eof,
+                Err(err) => panic!("Error occurred parsing! Error: {err}"),
+            }
+        }
+
+        tokens
+    }
+
+    fn lex(&self) -> Result<Token, &str> {
+        let mut reader = self.reader.borrow_mut();
+        match reader.next_single() {
+            Some(first) => {
+                if first.is_digit(10) {
+                    return self.lex_numeric(&mut reader, first);
+                }
+
+                if first.is_alphabetic() {
+                    return self.lex_alphabetic(&mut reader, first);
+                }
+
+                match first {
+                    '\t' => Ok(Token::WhiteSpace(WhiteSpace::HorizontalTabulation)),
+                    '\n' => Ok(Token::LineTerminator(LineTerminator::LineFeed)),
+                    '\r' => Ok(Token::LineTerminator(LineTerminator::CarridgeReturn)),
+                    ' ' => Ok(Token::WhiteSpace(WhiteSpace::Space)),
+                    '(' => Ok(Token::Punc(Punc::Parentheses(Parentheses::Left))),
+                    ')' => Ok(Token::Punc(Punc::Parentheses(Parentheses::Right))),
+                    '=' => match reader.peek_single() {
+                        Some(second) => match second {
+                            '=' => {
+                                reader.bump();
+                                match reader.peek_single() {
+                                    Some(third) => match third {
+                                        '=' => {
+                                            reader.bump();
+                                            Ok(Token::Punc(Punc::Op(Op::StrictEquality)))
+                                        }
+                                        _ => Ok(Token::Punc(Punc::Op(Op::Equal))),
+                                    },
+                                    None => Err("Unexpected end."),
+                                }
+                            }
+                            _ => Ok(Token::Punc(Punc::Op(Op::Assignment))),
+                        },
+                        None => Err("Unexpected end."),
+                    },
+                    '*' => match reader.peek_single() {
+                        Some(second) => match second {
+                            '*' => {
+                                reader.bump();
+                                match reader.peek_single() {
+                                    Some(third) => match third {
+                                        '=' => {
+                                            reader.bump();
+                                            Ok(Token::Punc(Punc::Op(Op::ExponentialAssign)))
+                                        }
+                                        _ => Ok(Token::Punc(Punc::Op(Op::Exponential))),
+                                    },
+                                    None => Err("Unexpected end."),
+                                }
+                            }
+                            '=' => Ok(Token::Punc(Punc::Op(Op::MultiplicationAssign))),
+                            _ => Ok(Token::Punc(Punc::Op(Op::Multiplication))),
+                        },
+                        None => Err("Unexpected end."),
+                    },
+                    '+' => self.lex_assignable_operator(&mut reader, Op::Addition, Op::AdditonAssign),
+                    '-' => self.lex_assignable_operator(&mut reader, Op::Subtraction, Op::SubtractionAssign),
+                    '/' => self.lex_assignable_operator(&mut reader, Op::Division, Op::DivisionAssign),
+                    '%' => self.lex_assignable_operator(&mut reader, Op::Mod, Op::ModAssign),
+                    ';' => Ok(Token::Punc(Punc::SemiColon)),
+                    '[' => Ok(Token::Punc(Punc::Bracket(Bracket::Left))),
+                    ']' => Ok(Token::Punc(Punc::Bracket(Bracket::Right))),
+                    '{' => Ok(Token::Punc(Punc::Brace(Brace::Left))),
+                    '}' => Ok(Token::Punc(Punc::Brace(Brace::Right))),
+                    _ => Err("Unexpected char"),
+                }
+            }
+            None => return Ok(Token::Eof),
+        }
+    }
+
+    fn lex_alphabetic(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
+        let mut word = char.to_string();
+        loop {
+            match reader.peek_single() {
+                Some(peek) => {
+                    if peek.is_alphabetic() {
+                        word.push(peek);
+                        reader.bump();
+                    } else {
+                        return Ok(Token::Literal(Literal::StringLiteral(word)));
+                    }
+                }
+                None => return Ok(Token::Literal(Literal::StringLiteral(word))),
             }
         }
     }
 
-    pub fn consume(&mut self) -> Token {
-        todo!("Implement consume")
-    }
-
-    fn lex(&self, buffer: &[char]) -> Result<Option<Token>, &str> {
-        let char = buffer[0];
-
-        if char.is_digit(10) {
-            let mut idx = 1;
-            loop {
-                idx += 1;
-                match self.reader.peek(idx) {
-                    Some(number) => {
-                        if !number[idx - 1].is_digit(10) {
-                            return Ok(Some(Token::Literal(Literal::Numeric)));
-                        }
+    /// Given a numeric character, parses the rest of the numeric and determines numeric variant.
+    /// TODO: Need to check for decimals and non-decimal number types.
+    fn lex_numeric(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
+        let mut val = char.to_string();
+        loop {
+            match reader.peek_single() {
+                Some(peek) => {
+                    if peek.is_digit(10) {
+                        val.push(peek);
+                        reader.bump();
+                    } else {
+                        return Ok(Token::Literal(Literal::Numeric(val.parse().unwrap())));
                     }
-                    None => return Err("Unexpected end."),
                 }
+                None => return Ok(Token::Literal(Literal::Numeric(val.parse().unwrap()))),
             }
         }
-
-        if char.is_alphabetic() {}
-
-        match char {
-            '\t' => Ok(Some(Token::WhiteSpace(WhiteSpace::HorizontalTabulation))),
-            '\n' => Ok(Some(Token::LineTerminator(LineTerminator::LineFeed))),
-            '\r' => Ok(Some(Token::LineTerminator(LineTerminator::CarridgeReturn))),
-            ' ' => Ok(Some(Token::WhiteSpace(WhiteSpace::Space))),
-            '(' => Ok(Some(Token::Punctuation(Punctuation::Parentheses(Parentheses::Left)))),
-            ')' => Ok(Some(Token::Punctuation(Punctuation::Parentheses(Parentheses::Right)))),
-            '=' => match self.reader.peek(2) {
-                Some(second) => match second[1] {
-                    '=' => match self.reader.peek(3) {
-                        Some(third) => match third[2] {
-                            '=' => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::StrictEquality)))),
-                            _ => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::Equal)))),
-                        },
-                        None => Err("Unexpected end."),
-                    },
-                    _ => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::Assignment)))),
-                },
-                None => Err("Unexpected end."),
-            },
-            '*' => match self.reader.peek(2) {
-                Some(second) => match second[1] {
-                    '*' => match self.reader.peek(3) {
-                        Some(third) => match third[2] {
-                            '=' => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::ExponentialAssignment)))),
-                            _ => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::Exponential)))),
-                        },
-                        None => Err("Unexpected end."),
-                    },
-                    '=' => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::MultiplicationAssignment)))),
-                    _ => Ok(Some(Token::Punctuation(Punctuation::Operator(Operator::Multiplication)))),
-                },
-                None => Err("Unexpected end."),
-            },
-            '+' => self.handle_assignable_operator(Operator::Addition, Operator::AdditonAssignment),
-            '-' => self.handle_assignable_operator(Operator::Subtraction, Operator::SubtractionAssignment),
-            '/' => self.handle_assignable_operator(Operator::Division, Operator::DivisionAssignment),
-            '%' => self.handle_assignable_operator(Operator::Mod, Operator::ModAssignment),
-            ';' => Ok(Some(Token::Punctuation(Punctuation::SemiColon))),
-            '[' => Ok(Some(Token::Punctuation(Punctuation::Bracket(Bracket::Left)))),
-            ']' => Ok(Some(Token::Punctuation(Punctuation::Bracket(Bracket::Right)))),
-            '{' => Ok(Some(Token::Punctuation(Punctuation::Brace(Brace::Left)))),
-            '}' => Ok(Some(Token::Punctuation(Punctuation::Brace(Brace::Right)))),
-            _ => Ok(None),
-        }
     }
 
-    fn handle_assignable_operator(&self, operator: Operator, assign: Operator) -> Result<Option<Token>, &str> {
-        match self.reader.peek(2) {
-            Some(second) => match second[1] {
-                '=' => Ok(Some(Token::Punctuation(Punctuation::Operator(assign)))),
-                _ => Ok(Some(Token::Punctuation(Punctuation::Operator(operator)))),
+    fn lex_assignable_operator(&self, reader: &mut Reader, operator: Op, assign: Op) -> Result<Token, &str> {
+        // Check keywords
+        match reader.peek_single() {
+            Some(second) => match second {
+                '=' => {
+                    reader.bump();
+                    Ok(Token::Punc(Punc::Op(assign)))
+                }
+                _ => Ok(Token::Punc(Punc::Op(operator))),
             },
             None => Err("Unexpected end."),
         }
@@ -114,42 +162,47 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::token::{Literal, Operator, Punctuation, Token, WhiteSpace};
+    use crate::parser::token::{Literal, Op, Punc, Token, WhiteSpace};
 
     use super::Lexer;
 
     #[test]
-    fn test_peek() {
-        let lexer = Lexer::init(" ");
-        let res = lexer.peek();
-        assert_eq!(Token::WhiteSpace(WhiteSpace::Space), res);
+    fn test_tokenize() {
+        let mut lexer = Lexer::init(" ");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Eof, res[0]);
 
-        let lexer = Lexer::init("");
-        let res = lexer.peek();
-        assert_eq!(Token::Eof, res);
+        let mut lexer = Lexer::init("");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Eof, res[0]);
 
-        let lexer = Lexer::init(";");
-        let res = lexer.peek();
-        assert_eq!(Token::Punctuation(Punctuation::SemiColon), res);
+        let mut lexer = Lexer::init(";");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Punc(Punc::SemiColon), res[0]);
 
-        let lexer = Lexer::init("+= 2");
-        let res = lexer.peek();
-        assert_eq!(Token::Punctuation(Punctuation::Operator(Operator::AdditonAssignment)), res);
+        let mut lexer = Lexer::init("+= ");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Punc(Punc::Op(Op::AdditonAssign)), res[0]);
 
-        let lexer = Lexer::init("*= 3");
-        let res = lexer.peek();
-        assert_eq!(Token::Punctuation(Punctuation::Operator(Operator::MultiplicationAssignment)), res);
+        let mut lexer = Lexer::init("*= 3");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Punc(Punc::Op(Op::MultiplicationAssign)), res[0]);
 
-        let lexer = Lexer::init("**= 3");
-        let res = lexer.peek();
-        assert_eq!(Token::Punctuation(Punctuation::Operator(Operator::ExponentialAssignment)), res);
+        let mut lexer = Lexer::init("**= 3");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Punc(Punc::Op(Op::ExponentialAssign)), res[0]);
 
-        let lexer = Lexer::init("** 3");
-        let res = lexer.peek();
-        assert_eq!(Token::Punctuation(Punctuation::Operator(Operator::Exponential)), res);
+        let mut lexer = Lexer::init("** 3");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Punc(Punc::Op(Op::Exponential)), res[0]);
 
-        let lexer = Lexer::init("356 ");
-        let res = lexer.peek();
-        assert_eq!(Token::Literal(Literal::Numeric), res);
+        let mut lexer = Lexer::init("356 ");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Literal(Literal::Numeric(356)), res[0]);
+
+        let mut lexer = Lexer::init("testing 123");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
+        assert_eq!(Token::Literal(Literal::Numeric(123)), res[1]);
     }
 }

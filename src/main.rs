@@ -8,9 +8,10 @@ mod parser;
 
 #[derive(CliParser, Debug)]
 #[command(name = "hermes")]
-#[command(about = "Hermes compiler", long_about = None)]
+#[command(about = "Hermes Compiler", long_about = None)]
 struct Cli {
     file: String,
+    output: String,
 }
 
 fn main() {
@@ -37,6 +38,6 @@ fn main() {
         }
     }
 
-    let parser = Parser::init(&source);
+    let mut parser = Parser::init(&source);
     parser.parse()
 }

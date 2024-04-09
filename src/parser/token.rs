@@ -1,11 +1,11 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Token {
-    Comment(Comment),
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token<'a> {
+    Comment(Comment<'a>),
     Eof,
     Keyword(Keyword),
     LineTerminator(LineTerminator),
-    Literal(Literal),
-    Punctuation(Punctuation),
+    Literal(Literal<'a>),
+    Punc(Punc),
     WhiteSpace(WhiteSpace),
 }
 
@@ -27,35 +27,37 @@ pub enum LineTerminator {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Boolean {
+    // true
     True,
+    // false
     False,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Comment {
-    SingleLine,
-    MultiLine,
+pub enum Comment<'a> {
+    SingleLine(&'a str),
+    MultiLine(&'a str),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Literal {
-    BigIntSuffix,
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal<'a> {
+    BigIntSuffix(&'a str),
     Boolean(Boolean),
-    Decimal,
-    DecimalBigInteger,
-    DecimalInteger,
-    NonDecimalInteger(NonDecimalIntegerLiteral),
+    Decimal(&'a str),
+    DecimalBigInteger(&'a str),
+    DecimalInteger(&'a str),
+    NonDecimalInteger(NonDecimalIntegerLiteral<'a>),
     Null,
-    Numeric,
-    StringLiteral,
-    RegEx,
+    Numeric(i64),
+    StringLiteral(String),
+    RegEx(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum NonDecimalIntegerLiteral {
-    BigInteger,
-    OctalInteger,
-    HexInteger,
+pub enum NonDecimalIntegerLiteral<'a> {
+    BigInteger(&'a str),
+    OctalInteger(&'a str),
+    HexInteger(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -99,10 +101,10 @@ pub enum Keyword {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Punctuation {
+pub enum Punc {
     Brace(Brace),
     Bracket(Bracket),
-    Operator(Operator),
+    Op(Op),
     Parentheses(Parentheses),
     SemiColon,
 }
@@ -132,45 +134,45 @@ pub enum Brace {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Operator {
+pub enum Op {
     // +
     Addition,
     // +=
-    AdditonAssignment,
+    AdditonAssign,
     // =
     Assignment,
     // -
     Subtraction,
     // -=
-    SubtractionAssignment,
+    SubtractionAssign,
     // *
     Multiplication,
     // *=
-    MultiplicationAssignment,
+    MultiplicationAssign,
     // /
     Division,
     // /=
-    DivisionAssignment,
+    DivisionAssign,
     // **
     Exponential,
     // **=
-    ExponentialAssignment,
+    ExponentialAssign,
     // %
     Mod,
     // %=
-    ModAssignment,
+    ModAssign,
     // <<
     LeftShift,
     // <<=
-    LeftShiftAssignment,
+    LeftShiftAssign,
     // >>
     RightShift,
     // >>=
-    RightShiftAssignment,
+    RightShiftAssign,
     // >>>
     ZeroFillRightShift,
     // >>>=
-    UnsignedRightShiftAssignment,
+    UnsignedRightShiftAssign,
     // >
     GreaterThan,
     // <
@@ -190,13 +192,21 @@ pub enum Operator {
     // &&
     And,
     // &&=
-    AndAssignment,
+    AndAssign,
     // ||
     Or,
     // ||=
-    OrAssignment,
+    OrAssign,
     // ??
-    NullishCoalescingAssignment,
+    NullishCoalescingAssign,
     // ...
     Spread,
+}
+
+pub fn is_whitespace(token: &Token) -> bool {
+    match token {
+        Token::LineTerminator(_) => true,
+        Token::WhiteSpace(_) => true,
+        _ => false,
+    }
 }
