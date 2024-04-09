@@ -3,7 +3,9 @@ use std::rc::Rc;
 
 use super::reader::Reader;
 
-use super::token::{is_whitespace, Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace};
+use super::token::{
+    is_whitespace, map_keyword, Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace,
+};
 
 pub struct Lexer<'a> {
     reader: Rc<RefCell<Reader>>,
@@ -69,7 +71,7 @@ impl<'a> Lexer<'a> {
                                     None => Err("Unexpected end."),
                                 }
                             }
-                            _ => Ok(Token::Punc(Punc::Op(Op::Assignment))),
+                            _ => Ok(Token::Punc(Punc::Op(Op::Assign))),
                         },
                         None => Err("Unexpected end."),
                     },
@@ -118,10 +120,18 @@ impl<'a> Lexer<'a> {
                         word.push(peek);
                         reader.bump();
                     } else {
-                        return Ok(Token::Literal(Literal::StringLiteral(word)));
+                        return match map_keyword(&word) {
+                            Some(keyword) => Ok(Token::Keyword(keyword)),
+                            None => Ok(Token::Literal(Literal::StringLiteral(word))),
+                        };
                     }
                 }
-                None => return Ok(Token::Literal(Literal::StringLiteral(word))),
+                None => {
+                    return match map_keyword(&word) {
+                        Some(keyword) => Ok(Token::Keyword(keyword)),
+                        None => Ok(Token::Literal(Literal::StringLiteral(word))),
+                    }
+                }
             }
         }
     }
@@ -162,12 +172,20 @@ impl<'a> Lexer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::token::{Literal, Op, Punc, Token, WhiteSpace};
+    use crate::parser::token::{Keyword, Literal, Op, Punc, Token};
 
     use super::Lexer;
 
     #[test]
     fn test_tokenize() {
+        let mut lexer = Lexer::init("testing 123");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
+        assert_eq!(Token::Literal(Literal::Numeric(123)), res[1]);
+    }
+
+    #[test]
+    fn test_whitespace() {
         let mut lexer = Lexer::init(" ");
         let res = lexer.tokenize();
         assert_eq!(Token::Eof, res[0]);
@@ -175,11 +193,17 @@ mod tests {
         let mut lexer = Lexer::init("");
         let res = lexer.tokenize();
         assert_eq!(Token::Eof, res[0]);
+    }
 
+    #[test]
+    fn test_punctuation() {
         let mut lexer = Lexer::init(";");
         let res = lexer.tokenize();
         assert_eq!(Token::Punc(Punc::SemiColon), res[0]);
+    }
 
+    #[test]
+    fn test_operators() {
         let mut lexer = Lexer::init("+= ");
         let res = lexer.tokenize();
         assert_eq!(Token::Punc(Punc::Op(Op::AdditonAssign)), res[0]);
@@ -195,14 +219,28 @@ mod tests {
         let mut lexer = Lexer::init("** 3");
         let res = lexer.tokenize();
         assert_eq!(Token::Punc(Punc::Op(Op::Exponential)), res[0]);
+    }
 
+    #[test]
+    fn test_keywords() {
+        let mut lexer = Lexer::init("await yield");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Keyword(Keyword::Await), res[0]);
+        assert_eq!(Token::Keyword(Keyword::Yield), res[1]);
+
+        let mut lexer = Lexer::init("let x = await y;");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Keyword(Keyword::Let), res[0]);
+        assert_eq!(Token::Literal(Literal::StringLiteral("x".into())), res[1]);
+        assert_eq!(Token::Punc(Punc::Op(Op::Assign)), res[2]);
+        assert_eq!(Token::Keyword(Keyword::Await), res[3]);
+        assert_eq!(Token::Literal(Literal::StringLiteral("y".into())), res[4]);
+    }
+
+    #[test]
+    fn test_numerics() {
         let mut lexer = Lexer::init("356 ");
         let res = lexer.tokenize();
         assert_eq!(Token::Literal(Literal::Numeric(356)), res[0]);
-
-        let mut lexer = Lexer::init("testing 123");
-        let res = lexer.tokenize();
-        assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
-        assert_eq!(Token::Literal(Literal::Numeric(123)), res[1]);
     }
 }
