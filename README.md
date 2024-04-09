@@ -6,7 +6,7 @@ Hermes aims to be a drop in replacement for JS to allow for seamless opt in for 
 will be able to access the existing massive ecosystem of JS packages, whilst being able to write JS interopable code. 
 
 ## Roadmap
-### Emulated TS Compiler
+### Emulated JS Compiler
 1. AST Lowering
    - Reader
    - Lexer
@@ -14,7 +14,6 @@ will be able to access the existing massive ecosystem of JS packages, whilst bei
 2. HLIR Lowering
    - Type inferencing and Checking
 3. MLIR Lowering
-   - Monomorphization of TS Types
 4. LLVM Lowering
    - CodeGen
 

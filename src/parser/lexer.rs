@@ -21,7 +21,7 @@ impl<'a> Lexer<'a> {
         loop {
             match self.lex() {
                 Ok(token) => {
-                    tokens.push(token);
+                    tokens.push(token.clone());
                     if token == Token::Eof {
                         break;
                     }
@@ -38,11 +38,11 @@ impl<'a> Lexer<'a> {
         match reader.next_single() {
             Some(first) => {
                 if first.is_digit(10) {
-                    return self.lex_numeric(&reader, first);
+                    return self.lex_numeric(&mut reader, first);
                 }
 
                 if first.is_alphabetic() {
-                    return self.lex_alphabetic(&reader, first);
+                    return self.lex_alphabetic(&mut reader, first);
                 }
 
                 match first {
@@ -107,35 +107,38 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_alphabetic(&self, reader: &Reader, char: char) -> Result<Token, &str> {
-        let mut idx = 1;
+    fn lex_alphabetic(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
+        let mut word = char.to_string();
         loop {
-            idx += 1;
-            let peek = reader.peek(idx);
-            match peek {
-                Some(word) => match &word.into_iter().collect::<String>() {
-                    _ => continue,
-                },
-                None => return Err("Unexpected end."),
+            match reader.peek_single() {
+                Some(peek) => {
+                    if peek.is_alphabetic() {
+                        word.push(peek);
+                        reader.bump();
+                    } else {
+                        return Ok(Token::Literal(Literal::StringLiteral(word)));
+                    }
+                }
+                None => return Ok(Token::Literal(Literal::StringLiteral(word))),
             }
         }
     }
 
-    fn lex_numeric(&self, reader: &Reader, char: char) -> Result<Token, &str> {
-        let val = char.to_string();
-        let mut idx = 1;
+    /// Given a numeric character, parses the rest of the numeric and determines numeric variant.
+    /// TODO: Need to check for decimals and non-decimal number types.
+    fn lex_numeric(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
+        let mut val = char.to_string();
         loop {
-            idx += 1;
-            match reader.peek(idx) {
-                Some(number) => {
-                    if !number[idx - 1].is_digit(10) {
-                        match number.into_iter().collect::<String>().parse::<i64>() {
-                            Ok(parsed) => return Ok(Token::Literal(Literal::Numeric(parsed))),
-                            Err(_) => return Err("Invalid numeric!"),
-                        }
+            match reader.peek_single() {
+                Some(peek) => {
+                    if peek.is_digit(10) {
+                        val.push(peek);
+                        reader.bump();
+                    } else {
+                        return Ok(Token::Literal(Literal::Numeric(val.parse().unwrap())));
                     }
                 }
-                None => return Err("Unexpected end."),
+                None => return Ok(Token::Literal(Literal::Numeric(val.parse().unwrap()))),
             }
         }
     }
@@ -162,7 +165,7 @@ mod tests {
     use super::Lexer;
 
     #[test]
-    fn test_peek() {
+    fn test_tokenize() {
         let mut lexer = Lexer::init(" ");
         let res = lexer.tokenize();
         assert_eq!(Token::WhiteSpace(WhiteSpace::Space), res[0]);
@@ -194,5 +197,10 @@ mod tests {
         let mut lexer = Lexer::init("356 ");
         let res = lexer.tokenize();
         assert_eq!(Token::Literal(Literal::Numeric(356)), res[0]);
+
+        let mut lexer = Lexer::init("testing 123");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
+        assert_eq!(Token::Literal(Literal::Numeric(123)), res[2]);
     }
 }

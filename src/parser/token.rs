@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token<'a> {
     Comment(Comment<'a>),
     Eof,
@@ -39,7 +39,7 @@ pub enum Comment<'a> {
     MultiLine(&'a str),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal<'a> {
     BigIntSuffix(&'a str),
     Boolean(Boolean),
@@ -49,7 +49,7 @@ pub enum Literal<'a> {
     NonDecimalInteger(NonDecimalIntegerLiteral<'a>),
     Null,
     Numeric(i64),
-    StringLiteral(&'a str),
+    StringLiteral(String),
     RegEx(&'a str),
 }
 
