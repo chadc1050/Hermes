@@ -7,11 +7,11 @@ mod lexer;
 mod token;
 
 /// Parses source code to AST based on [ECMAScript Lexical Grammar](https://262.ecma-international.org/#sec-intro).
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+pub struct Parser {
+    lexer: Lexer,
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn init(source: &str) -> Self {
         Parser { lexer: Lexer::init(source) }
     }
@@ -19,7 +19,9 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) {
         let tokens = self.lexer.tokenize();
 
-        for token in tokens {}
+        for token in tokens {
+            todo!("Implement lowering to AST.")
+        }
     }
 }
 

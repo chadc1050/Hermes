@@ -7,14 +7,13 @@ use super::token::{
     is_whitespace, map_keyword, Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace,
 };
 
-pub struct Lexer<'a> {
+pub struct Lexer {
     reader: Rc<RefCell<Reader>>,
-    last: Option<Token<'a>>,
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer {
     pub fn init(source: &str) -> Self {
-        Lexer { reader: Rc::new(RefCell::new(Reader::init(source))), last: None }
+        Lexer { reader: Rc::new(RefCell::new(Reader::init(source))) }
     }
 
     pub fn tokenize(&mut self) -> Vec<Token> {
