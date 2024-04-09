@@ -100,6 +100,48 @@ pub enum Keyword {
     Yield,
 }
 
+pub fn map_keyword(keyword_str: &str) -> Option<Keyword> {
+    match keyword_str {
+        "await" => Some(Keyword::Await),
+        "break" => Some(Keyword::Break),
+        "case" => Some(Keyword::Case),
+        "catch" => Some(Keyword::Catch),
+        "class" => Some(Keyword::Class),
+        "const" => Some(Keyword::Const),
+        "continue" => Some(Keyword::Continue),
+        "debugger" => Some(Keyword::Debugger),
+        "default" => Some(Keyword::Default),
+        "delete" => Some(Keyword::Delete),
+        "do" => Some(Keyword::Do),
+        "else" => Some(Keyword::Else),
+        "export" => Some(Keyword::Export),
+        "extends" => Some(Keyword::Extends),
+        "finally" => Some(Keyword::Finally),
+        "for" => Some(Keyword::For),
+        "function" => Some(Keyword::Function),
+        "if" => Some(Keyword::If),
+        "import" => Some(Keyword::Import),
+        "in" => Some(Keyword::In),
+        "instanceof" => Some(Keyword::InstanceOf),
+        "let" => Some(Keyword::Let),
+        "new" => Some(Keyword::New),
+        "return" => Some(Keyword::Return),
+        "static" => Some(Keyword::Static),
+        "super" => Some(Keyword::Super),
+        "switch" => Some(Keyword::Switch),
+        "this" => Some(Keyword::This),
+        "throw" => Some(Keyword::Throw),
+        "try" => Some(Keyword::Try),
+        "typeof" => Some(Keyword::TypeOf),
+        "var" => Some(Keyword::Var),
+        "void" => Some(Keyword::Void),
+        "while" => Some(Keyword::While),
+        "with" => Some(Keyword::With),
+        "yield" => Some(Keyword::Yield),
+        _ => None,
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Punc {
     Brace(Brace),
@@ -140,7 +182,7 @@ pub enum Op {
     // +=
     AdditonAssign,
     // =
-    Assignment,
+    Assign,
     // -
     Subtraction,
     // -=
