@@ -202,3 +202,11 @@ pub enum Op {
     // ...
     Spread,
 }
+
+pub fn is_whitespace(token: &Token) -> bool {
+    match token {
+        Token::LineTerminator(_) => true,
+        Token::WhiteSpace(_) => true,
+        _ => false,
+    }
+}

@@ -1,9 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::reader::{self, Reader};
+use super::reader::Reader;
 
-use super::token::{Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace};
+use super::token::{is_whitespace, Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace};
 
 pub struct Lexer<'a> {
     reader: Rc<RefCell<Reader>>,
@@ -21,7 +21,9 @@ impl<'a> Lexer<'a> {
         loop {
             match self.lex() {
                 Ok(token) => {
-                    tokens.push(token.clone());
+                    if !is_whitespace(&token) {
+                        tokens.push(token.clone());
+                    }
                     if token == Token::Eof {
                         break;
                     }
@@ -168,7 +170,7 @@ mod tests {
     fn test_tokenize() {
         let mut lexer = Lexer::init(" ");
         let res = lexer.tokenize();
-        assert_eq!(Token::WhiteSpace(WhiteSpace::Space), res[0]);
+        assert_eq!(Token::Eof, res[0]);
 
         let mut lexer = Lexer::init("");
         let res = lexer.tokenize();
@@ -201,6 +203,6 @@ mod tests {
         let mut lexer = Lexer::init("testing 123");
         let res = lexer.tokenize();
         assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
-        assert_eq!(Token::Literal(Literal::Numeric(123)), res[2]);
+        assert_eq!(Token::Literal(Literal::Numeric(123)), res[1]);
     }
 }
