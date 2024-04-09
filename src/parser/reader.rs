@@ -31,7 +31,6 @@ impl Reader {
             Some(char) => Some(char[0]),
             None => None,
         };
-        self.cursor += 1;
         next
     }
 
@@ -43,6 +42,11 @@ impl Reader {
         let next = Some(&self.source[self.cursor..self.cursor + n]);
         self.cursor += n;
         next
+    }
+
+    #[inline]
+    pub fn bump(&mut self) {
+        self.skip(1);
     }
 
     #[inline]

@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use super::reader::Reader;
+use super::reader::{self, Reader};
 
 use super::token::{Brace, Bracket, LineTerminator, Literal, Op, Parentheses, Punc, Token, WhiteSpace};
 
@@ -52,37 +52,49 @@ impl<'a> Lexer<'a> {
                     ' ' => Ok(Token::WhiteSpace(WhiteSpace::Space)),
                     '(' => Ok(Token::Punc(Punc::Parentheses(Parentheses::Left))),
                     ')' => Ok(Token::Punc(Punc::Parentheses(Parentheses::Right))),
-                    '=' => match reader.peek(2) {
-                        Some(second) => match second[1] {
-                            '=' => match reader.peek(3) {
-                                Some(third) => match third[2] {
-                                    '=' => Ok(Token::Punc(Punc::Op(Op::StrictEquality))),
-                                    _ => Ok(Token::Punc(Punc::Op(Op::Equal))),
-                                },
-                                None => Err("Unexpected end."),
-                            },
+                    '=' => match reader.peek_single() {
+                        Some(second) => match second {
+                            '=' => {
+                                reader.bump();
+                                match reader.peek_single() {
+                                    Some(third) => match third {
+                                        '=' => {
+                                            reader.bump();
+                                            Ok(Token::Punc(Punc::Op(Op::StrictEquality)))
+                                        }
+                                        _ => Ok(Token::Punc(Punc::Op(Op::Equal))),
+                                    },
+                                    None => Err("Unexpected end."),
+                                }
+                            }
                             _ => Ok(Token::Punc(Punc::Op(Op::Assignment))),
                         },
                         None => Err("Unexpected end."),
                     },
-                    '*' => match reader.peek(2) {
-                        Some(second) => match second[1] {
-                            '*' => match reader.peek(3) {
-                                Some(third) => match third[2] {
-                                    '=' => Ok(Token::Punc(Punc::Op(Op::ExponentialAssign))),
-                                    _ => Ok(Token::Punc(Punc::Op(Op::Exponential))),
-                                },
-                                None => Err("Unexpected end."),
-                            },
+                    '*' => match reader.peek_single() {
+                        Some(second) => match second {
+                            '*' => {
+                                reader.bump();
+                                match reader.peek_single() {
+                                    Some(third) => match third {
+                                        '=' => {
+                                            reader.bump();
+                                            Ok(Token::Punc(Punc::Op(Op::ExponentialAssign)))
+                                        }
+                                        _ => Ok(Token::Punc(Punc::Op(Op::Exponential))),
+                                    },
+                                    None => Err("Unexpected end."),
+                                }
+                            }
                             '=' => Ok(Token::Punc(Punc::Op(Op::MultiplicationAssign))),
                             _ => Ok(Token::Punc(Punc::Op(Op::Multiplication))),
                         },
                         None => Err("Unexpected end."),
                     },
-                    '+' => self.lex_assignable_operator(&reader, Op::Addition, Op::AdditonAssign),
-                    '-' => self.lex_assignable_operator(&reader, Op::Subtraction, Op::SubtractionAssign),
-                    '/' => self.lex_assignable_operator(&reader, Op::Division, Op::DivisionAssign),
-                    '%' => self.lex_assignable_operator(&reader, Op::Mod, Op::ModAssign),
+                    '+' => self.lex_assignable_operator(&mut reader, Op::Addition, Op::AdditonAssign),
+                    '-' => self.lex_assignable_operator(&mut reader, Op::Subtraction, Op::SubtractionAssign),
+                    '/' => self.lex_assignable_operator(&mut reader, Op::Division, Op::DivisionAssign),
+                    '%' => self.lex_assignable_operator(&mut reader, Op::Mod, Op::ModAssign),
                     ';' => Ok(Token::Punc(Punc::SemiColon)),
                     '[' => Ok(Token::Punc(Punc::Bracket(Bracket::Left))),
                     ']' => Ok(Token::Punc(Punc::Bracket(Bracket::Right))),
@@ -97,7 +109,6 @@ impl<'a> Lexer<'a> {
 
     fn lex_alphabetic(&self, reader: &Reader, char: char) -> Result<Token, &str> {
         let mut idx = 1;
-        let alpha = char.to_string();
         loop {
             idx += 1;
             let peek = reader.peek(idx);
@@ -129,11 +140,14 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn lex_assignable_operator(&self, reader: &Reader, operator: Op, assign: Op) -> Result<Token, &str> {
+    fn lex_assignable_operator(&self, reader: &mut Reader, operator: Op, assign: Op) -> Result<Token, &str> {
         // Check keywords
-        match reader.peek(2) {
-            Some(second) => match second[1] {
-                '=' => Ok(Token::Punc(Punc::Op(assign))),
+        match reader.peek_single() {
+            Some(second) => match second {
+                '=' => {
+                    reader.bump();
+                    Ok(Token::Punc(Punc::Op(assign)))
+                }
                 _ => Ok(Token::Punc(Punc::Op(operator))),
             },
             None => Err("Unexpected end."),
@@ -161,7 +175,7 @@ mod tests {
         let res = lexer.tokenize();
         assert_eq!(Token::Punc(Punc::SemiColon), res[0]);
 
-        let mut lexer = Lexer::init("+= 2");
+        let mut lexer = Lexer::init("+= ");
         let res = lexer.tokenize();
         assert_eq!(Token::Punc(Punc::Op(Op::AdditonAssign)), res[0]);
 
