@@ -1,35 +1,42 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token<'a> {
     Comment(Comment<'a>),
+    /// End of file
     Eof,
+    /// Alphabetic tokens that are not string literals, boolean literals, or keywords.
+    Identifier(String),
+    /// Language keywords
     Keyword(Keyword),
     LineTerminator(LineTerminator),
+    /// Value literals
     Literal(Literal<'a>),
     Punc(Punc),
     WhiteSpace(WhiteSpace),
+    /// Any unknown characters that we are unable to identify
+    Unicode(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WhiteSpace {
-    //
+    ///
     Space,
-    // \t
+    /// \t
     HorizontalTabulation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LineTerminator {
-    // \n
+    /// \n
     LineFeed,
-    // \r
+    /// \r
     CarridgeReturn,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Boolean {
-    // true
+    /// true
     True,
-    // false
+    /// false
     False,
 }
 
@@ -146,102 +153,125 @@ pub fn map_keyword(keyword_str: &str) -> Option<Keyword> {
 pub enum Punc {
     Brace(Brace),
     Bracket(Bracket),
+    /// .
+    Dot,
     Op(Op),
     Parentheses(Parentheses),
+    /// ;
     SemiColon,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Parentheses {
-    // (
+    /// (
     Left,
-    // )
+    /// )
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Bracket {
-    // [
+    /// [
     Left,
-    // ]
+    /// ]
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Brace {
-    // {
+    /// {
     Left,
-    // }
+    /// }
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Op {
-    // +
+    /// +
     Addition,
-    // +=
+    /// +
+    Increment,
+    /// +=
     AdditonAssign,
-    // =
+    /// =
     Assign,
-    // -
+    /// -
     Subtraction,
-    // -=
+    /// --
+    Decrement,
+    /// -=
     SubtractionAssign,
-    // *
+    /// *
     Multiplication,
-    // *=
+    /// *=
     MultiplicationAssign,
-    // /
+    /// /
     Division,
-    // /=
+    /// /=
     DivisionAssign,
-    // **
+    /// **
     Exponential,
-    // **=
+    /// **=
     ExponentialAssign,
-    // %
+    /// %
     Mod,
-    // %=
+    /// %=
     ModAssign,
-    // <<
+    /// <<
     LeftShift,
-    // <<=
+    /// <<=
     LeftShiftAssign,
-    // >>
+    /// >>
     RightShift,
-    // >>=
+    /// >>=
     RightShiftAssign,
-    // >>>
+    /// >>>
     ZeroFillRightShift,
-    // >>>=
+    /// >>>=
     UnsignedRightShiftAssign,
-    // >
+    /// >
     GreaterThan,
-    // <
+    /// <
     LessThan,
-    // ==
+    /// ==
     Equal,
-    // ===
+    /// ===
     StrictEquality,
-    // !
+    /// !
     Not,
-    // !=
+    /// !=
     NotEqual,
-    // >=
+    /// >=
     GreaterThanEqual,
-    // <=
+    /// <=
     LessThanEqual,
-    // &&
+    /// &
+    BitAnd,
+    /// &=
+    BitAndAssing,
+    /// &&
     And,
-    // &&=
+    /// &&=
     AndAssign,
-    // ||
+    /// |
+    BitOr,
+    /// |=
+    BitOrAssign,
+    /// ||
     Or,
-    // ||=
+    /// ||=
     OrAssign,
-    // ??
+    /// ^
+    BitXor,
+    /// ^=
+    BitXorAssign,
+    /// ?.
+    OptionalChain,
+    /// ??
+    NullishCoalescing,
+    /// ??=
     NullishCoalescingAssign,
-    // ...
+    /// ...
     Spread,
 }
 
