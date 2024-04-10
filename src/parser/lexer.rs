@@ -46,7 +46,7 @@ impl Lexer {
                 }
 
                 if first.is_alphabetic() {
-                    return self.lex_alphabetic(&mut reader, first);
+                    return self.lex_identifier(&mut reader, first);
                 }
 
                 match first {
@@ -248,6 +248,7 @@ impl Lexer {
         }
     }
 
+    /// Handles alphabetic tokens encapsulated by
     fn lex_string_literal(&self, reader: &mut Reader) -> Result<Token, &str> {
         let mut word = String::new();
         loop {
@@ -268,8 +269,8 @@ impl Lexer {
         }
     }
 
-    fn lex_alphabetic(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
-        // TODO: This needs to be broken up into literals and identifiers
+    /// Handles all alphabetic tokens not encapsulated by quotations (non-string literals)
+    fn lex_identifier(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
         let mut word = char.to_string();
         loop {
             match reader.peek_single() {
@@ -347,7 +348,7 @@ mod tests {
     fn test_tokenize() {
         let mut lexer = Lexer::init("testing 123");
         let res = lexer.tokenize();
-        assert_eq!(Token::Literal(Literal::StringLiteral("testing".into())), res[0]);
+        assert_eq!(Token::Identifier("testing".into()), res[0]);
         assert_eq!(Token::Literal(Literal::Numeric(123)), res[1]);
     }
 
@@ -386,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_string_identifier() {
-        let mut lexer = Lexer::init("let test = new Tokenizer(\"debugger\")");
+        let mut lexer = Lexer::init("let test = new Tokenizer(\"debugger\");");
         let res = lexer.tokenize();
         assert_eq!(Token::Keyword(Keyword::Let), res[0]);
         assert_eq!(Token::Identifier("test".into()), res[1]);
@@ -396,6 +397,7 @@ mod tests {
         assert_eq!(Token::Punc(Punc::Parentheses(Parentheses::Left)), res[5]);
         assert_eq!(Token::Literal(Literal::StringLiteral("debugger".into())), res[6]);
         assert_eq!(Token::Punc(Punc::Parentheses(Parentheses::Right)), res[7]);
+        assert_eq!(Token::Punc(Punc::SemiColon), res[8]);
     }
 
     #[test]
@@ -435,10 +437,10 @@ mod tests {
         let mut lexer = Lexer::init("let x = await y;");
         let res = lexer.tokenize();
         assert_eq!(Token::Keyword(Keyword::Let), res[0]);
-        assert_eq!(Token::Literal(Literal::StringLiteral("x".into())), res[1]);
+        assert_eq!(Token::Identifier("x".into()), res[1]);
         assert_eq!(Token::Punc(Punc::Op(Op::Assign)), res[2]);
         assert_eq!(Token::Keyword(Keyword::Await), res[3]);
-        assert_eq!(Token::Literal(Literal::StringLiteral("y".into())), res[4]);
+        assert_eq!(Token::Identifier("y".into()), res[4]);
     }
 
     #[test]
