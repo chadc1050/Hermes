@@ -11,25 +11,25 @@ pub enum Token<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WhiteSpace {
-    //
+    ///
     Space,
-    // \t
+    /// \t
     HorizontalTabulation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LineTerminator {
-    // \n
+    /// \n
     LineFeed,
-    // \r
+    /// \r
     CarridgeReturn,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Boolean {
-    // true
+    /// true
     True,
-    // false
+    /// false
     False,
 }
 
@@ -153,95 +153,115 @@ pub enum Punc {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Parentheses {
-    // (
+    /// (
     Left,
-    // )
+    /// )
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Bracket {
-    // [
+    /// [
     Left,
-    // ]
+    /// ]
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Brace {
-    // {
+    /// {
     Left,
-    // }
+    /// }
     Right,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Op {
-    // +
+    /// +
     Addition,
-    // +=
+    /// +
+    Increment,
+    /// +=
     AdditonAssign,
-    // =
+    /// =
     Assign,
-    // -
+    /// -
     Subtraction,
-    // -=
+    /// --
+    Decrement,
+    /// -=
     SubtractionAssign,
-    // *
+    /// *
     Multiplication,
-    // *=
+    /// *=
     MultiplicationAssign,
-    // /
+    /// /
     Division,
-    // /=
+    /// /=
     DivisionAssign,
-    // **
+    /// **
     Exponential,
-    // **=
+    /// **=
     ExponentialAssign,
-    // %
+    /// %
     Mod,
-    // %=
+    /// %=
     ModAssign,
-    // <<
+    /// <<
     LeftShift,
-    // <<=
+    /// <<=
     LeftShiftAssign,
-    // >>
+    /// >>
     RightShift,
-    // >>=
+    /// >>=
     RightShiftAssign,
-    // >>>
+    /// >>>
     ZeroFillRightShift,
-    // >>>=
+    /// >>>=
     UnsignedRightShiftAssign,
-    // >
+    /// >
     GreaterThan,
-    // <
+    /// <
     LessThan,
-    // ==
+    /// ==
     Equal,
-    // ===
+    /// ===
     StrictEquality,
-    // !
+    /// !
     Not,
-    // !=
+    /// !=
     NotEqual,
-    // >=
+    /// >=
     GreaterThanEqual,
-    // <=
+    /// <=
     LessThanEqual,
-    // &&
+    /// &
+    BitAnd,
+    /// &=
+    BitAndAssing,
+    /// &&
     And,
-    // &&=
+    /// &&=
     AndAssign,
-    // ||
+    /// |
+    BitOr,
+    /// |=
+    BitOrAssign,
+    /// ||
     Or,
-    // ||=
+    /// ||=
     OrAssign,
-    // ??
+    /// ^
+    BitXor,
+    /// ^=
+    BitXorAssign,
+    /// ?.
+    OptionalChain,
+    /// ??
+    NullishCoalescing,
+    /// ??=
     NullishCoalescingAssign,
-    // ...
+    /// ...
     Spread,
 }
 
