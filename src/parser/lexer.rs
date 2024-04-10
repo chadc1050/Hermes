@@ -50,6 +50,7 @@ impl Lexer {
                 }
 
                 match first {
+                    '"' => self.lex_string_literal(&mut reader),
                     '\t' => Ok(Token::WhiteSpace(WhiteSpace::HorizontalTabulation)),
                     '\n' => Ok(Token::LineTerminator(LineTerminator::LineFeed)),
                     '\r' => Ok(Token::LineTerminator(LineTerminator::CarridgeReturn)),
@@ -234,19 +235,41 @@ impl Lexer {
                         },
                         None => Err("Invalid Token"),
                     },
+                    '.' => Ok(Token::Punc(Punc::Dot)),
                     ';' => Ok(Token::Punc(Punc::SemiColon)),
                     '[' => Ok(Token::Punc(Punc::Bracket(Bracket::Left))),
                     ']' => Ok(Token::Punc(Punc::Bracket(Bracket::Right))),
                     '{' => Ok(Token::Punc(Punc::Brace(Brace::Left))),
                     '}' => Ok(Token::Punc(Punc::Brace(Brace::Right))),
-                    _ => Err("Unexpected char"),
+                    _ => Ok(Token::Unicode(first.to_string())),
                 }
             }
             None => return Ok(Token::Eof),
         }
     }
 
+    fn lex_string_literal(&self, reader: &mut Reader) -> Result<Token, &str> {
+        let mut word = String::new();
+        loop {
+            match reader.peek_single() {
+                Some(peek) => {
+                    if peek.is_alphabetic() {
+                        reader.bump();
+                        word.push(peek);
+                    } else if peek == '"' {
+                        reader.bump();
+                        return Ok(Token::Literal(Literal::StringLiteral(word)));
+                    }
+                }
+                None => {
+                    return Err("Unexpected end of string literal!");
+                }
+            }
+        }
+    }
+
     fn lex_alphabetic(&self, reader: &mut Reader, char: char) -> Result<Token, &str> {
+        // TODO: This needs to be broken up into literals and identifiers
         let mut word = char.to_string();
         loop {
             match reader.peek_single() {
@@ -262,7 +285,7 @@ impl Lexer {
                         } else if word == "false" {
                             return Ok(Token::Literal(Literal::Boolean(Boolean::False)));
                         } else {
-                            return Ok(Token::Literal(Literal::StringLiteral(word)));
+                            return Ok(Token::Identifier(word));
                         }
                     }
                 }
@@ -274,7 +297,7 @@ impl Lexer {
                     } else if word == "false" {
                         return Ok(Token::Literal(Literal::Boolean(Boolean::False)));
                     } else {
-                        return Ok(Token::Literal(Literal::StringLiteral(word)));
+                        return Ok(Token::Identifier(word));
                     }
                 }
             }
@@ -316,7 +339,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::token::{Boolean, Keyword, Literal, Op, Punc, Token};
+    use crate::parser::token::{Boolean, Keyword, Literal, Op, Parentheses, Punc, Token};
 
     use super::Lexer;
 
@@ -352,6 +375,27 @@ mod tests {
         let res = lexer.tokenize();
         assert_eq!(Token::Literal(Literal::Boolean(Boolean::True)), res[0]);
         assert_eq!(Token::Literal(Literal::Boolean(Boolean::False)), res[1]);
+    }
+
+    #[test]
+    fn test_string_literal() {
+        let mut lexer = Lexer::init("\"true\"");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Literal(Literal::StringLiteral("true".into())), res[0]);
+    }
+
+    #[test]
+    fn test_string_identifier() {
+        let mut lexer = Lexer::init("let test = new Tokenizer(\"debugger\")");
+        let res = lexer.tokenize();
+        assert_eq!(Token::Keyword(Keyword::Let), res[0]);
+        assert_eq!(Token::Identifier("test".into()), res[1]);
+        assert_eq!(Token::Punc(Punc::Op(Op::Assign)), res[2]);
+        assert_eq!(Token::Keyword(Keyword::New), res[3]);
+        assert_eq!(Token::Identifier("Tokenizer".into()), res[4]);
+        assert_eq!(Token::Punc(Punc::Parentheses(Parentheses::Left)), res[5]);
+        assert_eq!(Token::Literal(Literal::StringLiteral("debugger".into())), res[6]);
+        assert_eq!(Token::Punc(Punc::Parentheses(Parentheses::Right)), res[7]);
     }
 
     #[test]

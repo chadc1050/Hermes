@@ -1,12 +1,19 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token<'a> {
     Comment(Comment<'a>),
+    /// End of file
     Eof,
+    /// Alphabetic tokens that are not string literals, boolean literals, or keywords.
+    Identifier(String),
+    /// Language keywords
     Keyword(Keyword),
     LineTerminator(LineTerminator),
+    /// Value literals
     Literal(Literal<'a>),
     Punc(Punc),
     WhiteSpace(WhiteSpace),
+    /// Any unknown characters that we are unable to identify
+    Unicode(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -146,8 +153,11 @@ pub fn map_keyword(keyword_str: &str) -> Option<Keyword> {
 pub enum Punc {
     Brace(Brace),
     Bracket(Bracket),
+    /// .
+    Dot,
     Op(Op),
     Parentheses(Parentheses),
+    /// ;
     SemiColon,
 }
 
