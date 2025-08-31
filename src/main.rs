@@ -39,5 +39,5 @@ fn main() {
     }
 
     let mut parser = Parser::init(&source);
-    parser.parse()
+    let ast = parser.parse();
 }

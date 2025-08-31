@@ -1,23 +1,23 @@
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token<'a> {
-    Comment(Comment<'a>),
+pub enum TokenKind {
+    Comment(CommentKind),
     /// End of file
     Eof,
     /// Alphabetic tokens that are not string literals, boolean literals, or keywords.
     Identifier(String),
     /// Language keywords
-    Keyword(Keyword),
-    LineTerminator(LineTerminator),
+    Keyword(KeywordKind),
+    LineTerminator(LineTerminatorKind),
     /// Value literals
-    Literal(Literal<'a>),
-    Punc(Punc),
-    WhiteSpace(WhiteSpace),
+    Literal(LiteralKind),
+    Punc(PuncKind),
+    WhiteSpace(WhiteSpaceKind),
     /// Any unknown characters that we are unable to identify
     Unicode(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum WhiteSpace {
+pub enum WhiteSpaceKind {
     ///
     Space,
     /// \t
@@ -25,50 +25,50 @@ pub enum WhiteSpace {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum LineTerminator {
+pub enum LineTerminatorKind {
     /// \n
     LineFeed,
     /// \r
-    CarridgeReturn,
+    CarriageReturn,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Boolean {
+pub enum BooleanKind {
     /// true
     True,
     /// false
     False,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Comment<'a> {
-    SingleLine(&'a str),
-    MultiLine(&'a str),
+#[derive(Debug, Clone, PartialEq)]
+pub enum CommentKind {
+    SingleLine(String),
+    MultiLine(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Literal<'a> {
-    BigIntSuffix(&'a str),
-    Boolean(Boolean),
-    Decimal(&'a str),
-    DecimalBigInteger(&'a str),
-    DecimalInteger(&'a str),
-    NonDecimalInteger(NonDecimalIntegerLiteral<'a>),
+pub enum LiteralKind {
+    BigIntSuffix(String),
+    Boolean(BooleanKind),
+    Decimal(String),
+    DecimalBigInteger(String),
+    DecimalInteger(String),
+    NonDecimalInteger(NonDecimalIntegerLiteralKind),
     Null,
     Numeric(i64),
     StringLiteral(String),
-    RegEx(&'a str),
+    RegEx(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum NonDecimalIntegerLiteralKind {
+    BigInteger(String),
+    OctalInteger(String),
+    HexInteger(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum NonDecimalIntegerLiteral<'a> {
-    BigInteger(&'a str),
-    OctalInteger(&'a str),
-    HexInteger(&'a str),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Keyword {
+pub enum KeywordKind {
     Await,
     Break,
     Case,
@@ -107,62 +107,62 @@ pub enum Keyword {
     Yield,
 }
 
-pub fn map_keyword(keyword_str: &str) -> Option<Keyword> {
+pub fn map_keyword(keyword_str: &str) -> Option<KeywordKind> {
     match keyword_str {
-        "await" => Some(Keyword::Await),
-        "break" => Some(Keyword::Break),
-        "case" => Some(Keyword::Case),
-        "catch" => Some(Keyword::Catch),
-        "class" => Some(Keyword::Class),
-        "const" => Some(Keyword::Const),
-        "continue" => Some(Keyword::Continue),
-        "debugger" => Some(Keyword::Debugger),
-        "default" => Some(Keyword::Default),
-        "delete" => Some(Keyword::Delete),
-        "do" => Some(Keyword::Do),
-        "else" => Some(Keyword::Else),
-        "export" => Some(Keyword::Export),
-        "extends" => Some(Keyword::Extends),
-        "finally" => Some(Keyword::Finally),
-        "for" => Some(Keyword::For),
-        "function" => Some(Keyword::Function),
-        "if" => Some(Keyword::If),
-        "import" => Some(Keyword::Import),
-        "in" => Some(Keyword::In),
-        "instanceof" => Some(Keyword::InstanceOf),
-        "let" => Some(Keyword::Let),
-        "new" => Some(Keyword::New),
-        "return" => Some(Keyword::Return),
-        "static" => Some(Keyword::Static),
-        "super" => Some(Keyword::Super),
-        "switch" => Some(Keyword::Switch),
-        "this" => Some(Keyword::This),
-        "throw" => Some(Keyword::Throw),
-        "try" => Some(Keyword::Try),
-        "typeof" => Some(Keyword::TypeOf),
-        "var" => Some(Keyword::Var),
-        "void" => Some(Keyword::Void),
-        "while" => Some(Keyword::While),
-        "with" => Some(Keyword::With),
-        "yield" => Some(Keyword::Yield),
+        "await" => Some(KeywordKind::Await),
+        "break" => Some(KeywordKind::Break),
+        "case" => Some(KeywordKind::Case),
+        "catch" => Some(KeywordKind::Catch),
+        "class" => Some(KeywordKind::Class),
+        "const" => Some(KeywordKind::Const),
+        "continue" => Some(KeywordKind::Continue),
+        "debugger" => Some(KeywordKind::Debugger),
+        "default" => Some(KeywordKind::Default),
+        "delete" => Some(KeywordKind::Delete),
+        "do" => Some(KeywordKind::Do),
+        "else" => Some(KeywordKind::Else),
+        "export" => Some(KeywordKind::Export),
+        "extends" => Some(KeywordKind::Extends),
+        "finally" => Some(KeywordKind::Finally),
+        "for" => Some(KeywordKind::For),
+        "function" => Some(KeywordKind::Function),
+        "if" => Some(KeywordKind::If),
+        "import" => Some(KeywordKind::Import),
+        "in" => Some(KeywordKind::In),
+        "instanceof" => Some(KeywordKind::InstanceOf),
+        "let" => Some(KeywordKind::Let),
+        "new" => Some(KeywordKind::New),
+        "return" => Some(KeywordKind::Return),
+        "static" => Some(KeywordKind::Static),
+        "super" => Some(KeywordKind::Super),
+        "switch" => Some(KeywordKind::Switch),
+        "this" => Some(KeywordKind::This),
+        "throw" => Some(KeywordKind::Throw),
+        "try" => Some(KeywordKind::Try),
+        "typeof" => Some(KeywordKind::TypeOf),
+        "var" => Some(KeywordKind::Var),
+        "void" => Some(KeywordKind::Void),
+        "while" => Some(KeywordKind::While),
+        "with" => Some(KeywordKind::With),
+        "yield" => Some(KeywordKind::Yield),
         _ => None,
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Punc {
-    Brace(Brace),
-    Bracket(Bracket),
+pub enum PuncKind {
+    Brace(BraceKind),
+    Bracket(BracketKind),
     /// .
     Dot,
-    Op(Op),
-    Parentheses(Parentheses),
+    Op(OpKind),
+    Parentheses(ParenthesesKind),
     /// ;
     SemiColon,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Parentheses {
+pub enum ParenthesesKind {
     /// (
     Left,
     /// )
@@ -170,7 +170,7 @@ pub enum Parentheses {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Bracket {
+pub enum BracketKind {
     /// [
     Left,
     /// ]
@@ -178,7 +178,7 @@ pub enum Bracket {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Brace {
+pub enum BraceKind {
     /// {
     Left,
     /// }
@@ -186,7 +186,7 @@ pub enum Brace {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Op {
+pub enum OpKind {
     /// +
     Addition,
     /// +
@@ -275,10 +275,10 @@ pub enum Op {
     Spread,
 }
 
-pub fn is_whitespace(token: &Token) -> bool {
+pub fn is_removable(token: &TokenKind) -> bool {
     match token {
-        Token::LineTerminator(_) => true,
-        Token::WhiteSpace(_) => true,
+        TokenKind::WhiteSpace(_) => true,
+        TokenKind::Comment(_) => true,
         _ => false,
     }
 }
