@@ -1,11 +1,11 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpression, ExpressionKind, LetDeclaration, Node, NodeKind, PrimaryExpressionKind, AST};
+use crate::parser::ast::{AdditiveExpression, ConstDeclaration, DeclarationKind, ExpressionKind, IfStatement, LetDeclaration, LexicalKind, Node, NodeKind, PrimaryExpressionKind, StatementKind, AST};
 use crate::parser::ast::DeclarationKind::Lexical;
-use crate::parser::ast::LexicalKind::Let;
+use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::PrimaryExpressionKind::{Identifier, Literal, RegExLiteral};
 use crate::parser::reader::Reader;
-use crate::parser::token::{KeywordKind, LiteralKind, OpKind, PuncKind, TokenKind};
+use crate::parser::token::{KeywordKind, LiteralKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 use self::lexer::Lexer;
 
 mod reader;
@@ -56,31 +56,9 @@ impl Parser {
                         TokenKind::Identifier(_) => {}
                         TokenKind::Keyword(k) => {
                             match k {
-                                KeywordKind::Let | KeywordKind::Const => {
-                                    if in_statement {
-                                        return Err(ParseError{kind: ParseErrorKind::UnexpectedToken })
-                                    }
-
-                                    let assign = ref_ts.next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
-
-                                    let id;
-                                    match assign[1].clone() {
-                                        TokenKind::Identifier(val) => {id = val }
-                                        _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
-                                    }
-
-                                    if assign[2] != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
-                                        return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
-                                    }
-
-                                    match Parser::parse_expression(ref_ts) {
-                                        Some(expr) => {
-                                            let let_decl = LetDeclaration{ identifier: id, expression: expr };
-                                            curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Let(let_decl)))));
-                                        }
-                                        None => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
-                                    }
-                                }
+                                KeywordKind::Const => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Const(Self::parse_const_decl(ref_ts)?))))),
+                                KeywordKind::Let => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Let(Self::parse_let_decl(ref_ts)?))))),
+                                KeywordKind::If => curr_node.add_child(Node::new(NodeKind::Statement(StatementKind::If(Self::parse_if_statement(ref_ts)?)))),
                                 _ => {}
                             }
                         }
@@ -191,6 +169,74 @@ impl Parser {
             }
         }
     }
+
+    fn parse_let_decl(mut ts: RefMut<Reader<TokenKind>>) -> Result<LetDeclaration, ParseError> {
+
+        let statement = ts.next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+
+        let id;
+        match statement[1].clone() {
+            TokenKind::Identifier(val) => {id = val }
+            _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+
+        if statement[2] != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
+            return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+
+        match Parser::parse_expression(ts) {
+            Some(expr) => Ok(LetDeclaration{ identifier: id, expression: expr }),
+            None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+    }
+
+    fn parse_const_decl(mut ts: RefMut<Reader<TokenKind>>) -> Result<ConstDeclaration, ParseError> {
+
+        let statement = ts.next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+
+        let id;
+        match statement[1].clone() {
+            TokenKind::Identifier(val) => {id = val }
+            _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+
+        if statement[2] != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
+            return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+
+        match Parser::parse_expression(ts) {
+            Some(expr) => Ok(ConstDeclaration{ identifier: id, expression: expr }),
+            None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+    }
+
+    fn parse_if_statement(mut ts: RefMut<Reader<TokenKind>>) -> Result<IfStatement, ParseError> {
+        let open = ts.next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+        if open != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)) {
+            return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+
+        let sub_ts = RefCell::new(
+            Reader::init(
+                ts.collect_until(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)))
+            )
+        );
+
+        let expr = Self::parse_expression(sub_ts.borrow_mut());
+
+        match expr {
+            Some(expr) => {
+                let close = ts.next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+                if close != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)) {
+                    return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+                }
+                ts.bump();
+
+                Ok(IfStatement { condition: expr, body: vec![] })
+            }
+            None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
+    }
 }
 
 #[cfg(test)]
@@ -199,19 +245,22 @@ mod tests {
     use super::ast::NodeKind;
 
     #[test]
-    fn test_parser() {
+    fn test_decl() {
         let mut parser = Parser::init("let five = 5;\n let six = 6\n let added = five + six");
-
         let res = parser.parse();
-
         assert!(res.is_ok());
-
         let mut ast = res.unwrap();
-
         let root = ast.get_root();
-
         assert_eq!(root.node_kind, NodeKind::Module);
-
         assert_eq!(root.get_children().len(), 3);
+    }
+
+    #[test]
+    fn test_if() {
+        let mut parser = Parser::init("let y = 5;\nif (y == 5) {\nreturn;\n}");
+        let res = parser.parse();
+        assert!(res.is_ok());
+        let mut ast = res.unwrap();
+        let root = ast.get_root();
     }
 }

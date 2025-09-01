@@ -15,7 +15,7 @@ pub enum StatementKind {
     Variable,
     Empty,
     Expression,
-    If,
+    If(IfStatement),
     Breakable(BreakableStatementKind),
     Continue,
     Break,
@@ -57,7 +57,8 @@ pub enum HoistableDeclarationKind {
 pub enum ExpressionKind {
     Primary(PrimaryExpressionKind),
     Additive(Box<AdditiveExpression>),
-    Multiplicative
+    Multiplicative,
+    ConditionalExpression
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,6 +95,13 @@ pub struct AdditiveExpression {
     pub rhs: ExpressionKind
 }
 
+#[derive(Debug, PartialEq)]
+pub struct IfStatement {
+    pub condition: ExpressionKind,
+    pub body: Vec<Node>
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Node {
     pub node_kind: NodeKind,
     children: Vec<Node>,

@@ -1,10 +1,12 @@
-#[derive(Clone)]
+use crate::parser::ast::ExpressionKind::Primary;
+
+#[derive(Clone, Debug)]
 pub struct Reader<S> {
     source: Vec<S>,
     cursor: usize,
 }
 
-impl<S> Reader<S> where S: Clone {
+impl<S> Reader<S> where S: Clone + PartialEq {
     pub fn init(source: Vec<S>) -> Self {
         Reader { source, cursor: 0 }
     }
@@ -51,6 +53,28 @@ impl<S> Reader<S> where S: Clone {
     pub fn skip(&mut self, n: usize) {
         self.cursor += n;
     }
+
+    pub fn collect_until(&mut self, until: S) -> Vec<S> {
+
+        let mut collected: Vec<S> = Vec::new();
+
+        loop {
+            let peek = self.peek_single();
+            match peek {
+                Some(peek) => {
+                    if self.source[self.cursor] == until {
+                        return collected;
+                    } else {
+                        collected.push(peek.clone());
+                        self.bump();
+                    }
+                }
+                None => {
+                    return collected;
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -73,5 +97,17 @@ mod tests {
         assert!(peek.is_none());
         let next = reader.next(1);
         assert!(next.is_none());
+    }
+
+    #[test]
+    fn test_collect_until() {
+        let mut reader = Reader::init("Testing]".chars().collect());
+
+        let testing = reader.collect_until(']');
+
+        let expected: Vec<char> = "Testing".chars().collect();
+        assert_eq!(testing, expected);
+
+        assert_eq!(reader.next_single(), Some(']'));
     }
 }
