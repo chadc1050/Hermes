@@ -1,4 +1,4 @@
-use crate::parser::ast::ExpressionKind::Primary;
+use crate::parser::ast::ExprKind::Primary;
 
 #[derive(Clone, Debug)]
 pub struct Reader<S> {

@@ -4,12 +4,12 @@ pub enum TokenKind {
     /// End of file
     Eof,
     /// Alphabetic tokens that are not string literals, boolean literals, or keywords.
-    Identifier(String),
+    Id(String),
     /// Language keywords
     Keyword(KeywordKind),
     LineTerminator(LineTerminatorKind),
     /// Value literals
-    Literal(LiteralKind),
+    Lit(LitKind),
     Punc(PuncKind),
     WhiteSpace(WhiteSpaceKind),
     /// Any unknown characters that we are unable to identify
@@ -47,16 +47,16 @@ pub enum CommentKind {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum LiteralKind {
+pub enum LitKind {
     BigIntSuffix(String),
-    Boolean(BooleanKind),
-    Decimal(String),
+    Bool(BooleanKind),
+    Dec(String),
     DecimalBigInteger(String),
     DecimalInteger(String),
     NonDecimalInteger(NonDecimalIntegerLiteralKind),
     Null,
-    Numeric(i64),
-    StringLiteral(String),
+    Num(i64),
+    String(String),
     RegEx(String),
 }
 

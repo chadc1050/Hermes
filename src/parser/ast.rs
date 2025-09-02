@@ -1,22 +1,22 @@
 use std::any::Any;
-use crate::parser::token::{LiteralKind, TokenKind};
+use crate::parser::token::{LitKind, TokenKind};
 
 #[derive(Debug, PartialEq)]
 pub enum NodeKind {
-    Module(String),
-    Statement(StatementKind),
-    Declaration(DeclarationKind),
-    Expression(ExpressionKind),
+    Mod(String),
+    Stmt(StmtKind),
+    Expr(ExprKind),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum StatementKind {
-    Block(BlockStatement),
+pub enum StmtKind {
+    Block,
+    Decl(DeclKind),
     Variable,
     Empty,
     Expression,
-    If(IfStatement),
-    Breakable(BreakableStatementKind),
+    If(IfStmt),
+    Breakable(BreakableStmtKind),
     Continue,
     Break,
     Return,
@@ -27,26 +27,26 @@ pub enum StatementKind {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum BreakableStatementKind {
+pub enum BreakableStmtKind {
     Switch,
-    Iteration
+    Iter
 }
 
 #[derive(Debug, PartialEq)]
-pub enum DeclarationKind {
-    Hoistable(HoistableDeclarationKind),
+pub enum DeclKind {
+    Hoistable(HoistableDeclKind),
     Class,
     Lexical(LexicalKind)
 }
 
 #[derive(Debug, PartialEq)]
 pub enum LexicalKind {
-    Let(LetDeclaration),
-    Const(ConstDeclaration),
+    Let(LetDecl),
+    Const(ConstDecl),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum HoistableDeclarationKind {
+pub enum HoistableDeclKind {
     Function,
     AsyncFunction,
     Generator,
@@ -54,56 +54,56 @@ pub enum HoistableDeclarationKind {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ExpressionKind {
-    Primary(PrimaryExpressionKind),
-    Additive(Box<AdditiveExpression>),
+pub enum ExprKind {
+    Primary(PrimaryExprKind),
+    Additive(Box<AdditiveExpr>),
     Multiplicative,
-    ConditionalExpression
+    ConditionalExpr
 }
 
 #[derive(Debug, PartialEq)]
-pub enum PrimaryExpressionKind {
+pub enum PrimaryExprKind {
     This,
-    Identifier(String),
-    Literal(LiteralKind),
+    Id(String),
+    Lit(LitKind),
     ArrayLiteral,
     ObjectLiteral,
-    FunctionExpression,
-    AsyncFunctionExpression,
+    FunctionExpr,
+    AsyncFunctionExpr,
     ClassExpression,
-    GeneratorExpression,
-    AsyncGeneratorExpression,
+    GeneratorExpr,
+    AsyncGeneratorExpr,
     RegExLiteral(String),
     TemplateLiteral,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct LetDeclaration {
+pub struct LetDecl {
     pub identifier: String,
-    pub expression: ExpressionKind
+    pub expression: ExprKind
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ConstDeclaration {
+pub struct ConstDecl {
     pub identifier: String,
-    pub expression: ExpressionKind
+    pub expression: ExprKind
 }
 
 #[derive(Debug, PartialEq)]
-pub struct AdditiveExpression {
-    pub lhs: ExpressionKind,
-    pub rhs: ExpressionKind
+pub struct AdditiveExpr {
+    pub lhs: ExprKind,
+    pub rhs: ExprKind
 }
 
 #[derive(Debug, PartialEq)]
-pub struct BlockStatement {
-    pub statements: Vec<StatementKind>
+pub struct BlockStmt {
+    pub stmts: Vec<StmtKind>
 }
 
 #[derive(Debug, PartialEq)]
-pub struct IfStatement {
-    pub condition: ExpressionKind,
-    pub body: BlockStatement,
+pub struct IfStmt {
+    pub cond: ExprKind,
+    pub body: BlockStmt,
 }
 
 #[derive(Debug, PartialEq)]
@@ -124,6 +124,10 @@ impl Node {
         &self.children
     }
 
+    pub fn get_children_mut(&mut self) -> &mut Vec<Node> {
+        &mut self.children
+    }
+
     pub fn add_child(&mut self, child: Node) {
         self.children.push(child);
     }
@@ -141,7 +145,7 @@ pub struct AST {
 impl AST {
     pub fn new(module: String) -> Self {
         AST {
-            root: Node::new(NodeKind::Module(module)),
+            root: Node::new(NodeKind::Mod(module)),
         }
     }
 

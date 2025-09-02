@@ -1,11 +1,11 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpression, BlockStatement, ConstDeclaration, DeclarationKind, ExpressionKind, IfStatement, LetDeclaration, LexicalKind, Node, NodeKind, PrimaryExpressionKind, StatementKind, AST};
-use crate::parser::ast::DeclarationKind::Lexical;
+use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, DeclKind, ExprKind, IfStmt, LetDecl, LexicalKind, Node, NodeKind, PrimaryExprKind, StmtKind, AST};
+use crate::parser::ast::DeclKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
-use crate::parser::ast::PrimaryExpressionKind::{Identifier, Literal, RegExLiteral};
+use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
 use crate::parser::reader::Reader;
-use crate::parser::token::{KeywordKind, LiteralKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 use self::lexer::Lexer;
 
 mod reader;
@@ -42,7 +42,12 @@ impl Parser {
         let mut ast = AST::new(file_name);
 
         let mut in_statement = false;
-        let curr_node: &mut Node = ast.get_root();
+
+        let mut curr_node: &mut Node = ast.get_root();
+
+        curr_node.add_child(Node::new(NodeKind::Stmt(StmtKind::Block)));
+
+        curr_node = curr_node.get_children_mut().first_mut().unwrap();
 
         loop {
             let initial_token = self.ts.borrow().peek_single();
@@ -53,12 +58,12 @@ impl Parser {
                         TokenKind::Eof => {
                             break;
                         }
-                        TokenKind::Identifier(_) => {}
+                        TokenKind::Id(_) => {}
                         TokenKind::Keyword(k) => {
                             match k {
-                                KeywordKind::Const => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Const(self.parse_const_decl()?))))),
-                                KeywordKind::Let => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Let(self.parse_let_decl()?))))),
-                                KeywordKind::If => curr_node.add_child(Node::new(NodeKind::Statement(StatementKind::If(self.parse_if_statement()?)))),
+                                KeywordKind::Const => curr_node.add_child(Node::new(NodeKind::Stmt(StmtKind::Decl(Lexical(Const(self.parse_const_decl()?)))))),
+                                KeywordKind::Let => curr_node.add_child(Node::new(NodeKind::Stmt(StmtKind::Decl(Lexical(Let(self.parse_let_decl()?)))))),
+                                KeywordKind::If => curr_node.add_child(Node::new(NodeKind::Stmt(StmtKind::If(self.parse_if_statement()?)))),
                                 _ => {}
                             }
                         }
@@ -66,7 +71,7 @@ impl Parser {
                             self.ts.borrow_mut().bump();
                             in_statement = false;
                         }
-                        TokenKind::Literal(_) => {}
+                        TokenKind::Lit(_) => {}
                         TokenKind::Punc(punc) => {
                             match punc {
                                 PuncKind::SemiColon => {
@@ -89,23 +94,23 @@ impl Parser {
         Ok(ast)
     }
 
-    fn parse_block(&mut self) -> Result<BlockStatement, ParseError> {
-        Ok(BlockStatement{statements: vec![]})
+    fn parse_block(&mut self) -> Result<BlockStmt, ParseError> {
+        Ok(BlockStmt { stmts: vec![]})
     }
 
-    fn parse_expression(&mut self) -> Option<ExpressionKind> {
+    fn parse_expression(&mut self) -> Option<ExprKind> {
         let mut ref_ts = self.ts.borrow_mut();
         let first = ref_ts.next_single();
         match first {
             Some(token) => match token {
-                TokenKind::Identifier(first_id) => {
+                TokenKind::Id(first_id) => {
                     let second = ref_ts.next_single();
                     match second {
                         Some(second_token) => {
                             match second_token {
-                                TokenKind::Identifier(_) => todo!(),
+                                TokenKind::Id(_) => todo!(),
                                 TokenKind::Keyword(_) => todo!(),
-                                TokenKind::Literal(_) => todo!(),
+                                TokenKind::Lit(_) => todo!(),
                                 TokenKind::Punc(punc) => {
                                     match punc {
                                         PuncKind::Brace(_) => todo!(),
@@ -118,12 +123,12 @@ impl Parser {
                                                     match third {
                                                         Some(third_token) => {
                                                             match third_token {
-                                                                TokenKind::Identifier(second_id) => {
-                                                                    Some(ExpressionKind::Additive(Box::new(AdditiveExpression{lhs: ExpressionKind::Primary(Identifier(first_id)), rhs: ExpressionKind::Primary(Identifier(second_id))})))
+                                                                TokenKind::Id(second_id) => {
+                                                                    Some(ExprKind::Additive(Box::new(AdditiveExpr {lhs: ExprKind::Primary(Id(first_id)), rhs: ExprKind::Primary(Id(second_id))})))
                                                                 },
                                                                 TokenKind::Keyword(_) => todo!(),
                                                                 TokenKind::LineTerminator(_) => todo!(),
-                                                                TokenKind::Literal(_) => todo!(),
+                                                                TokenKind::Lit(_) => todo!(),
                                                                 TokenKind::Punc(_) => todo!(),
                                                                 _ => None
                                                             }
@@ -147,23 +152,23 @@ impl Parser {
                 }
                 TokenKind::Keyword(kw) => match kw {
                     KeywordKind::This => {
-                        Some(ExpressionKind::Primary(PrimaryExpressionKind::This))
+                        Some(ExprKind::Primary(PrimaryExprKind::This))
                     }
                     _ => None
                 }
-                TokenKind::Literal(literal) => {
+                TokenKind::Lit(literal) => {
                     ref_ts.bump();
                     match literal {
-                        LiteralKind::BigIntSuffix(bis) => Some(ExpressionKind::Primary(Literal(LiteralKind::BigIntSuffix(bis)))),
-                        LiteralKind::Boolean(bool) => Some(ExpressionKind::Primary(Literal(LiteralKind::Boolean(bool)))),
-                        LiteralKind::Decimal(dec) => Some(ExpressionKind::Primary(Literal(LiteralKind::Decimal(dec)))),
-                        LiteralKind::DecimalBigInteger(dbi) => Some(ExpressionKind::Primary(Literal(LiteralKind::DecimalBigInteger(dbi)))),
-                        LiteralKind::DecimalInteger(di) => Some(ExpressionKind::Primary(Literal(LiteralKind::DecimalInteger(di)))),
-                        LiteralKind::NonDecimalInteger(ndi) => Some(ExpressionKind::Primary(Literal(LiteralKind::NonDecimalInteger(ndi)))),
-                        LiteralKind::Null => Some(ExpressionKind::Primary(Literal(LiteralKind::Null))),
-                        LiteralKind::Numeric(num) => Some(ExpressionKind::Primary(Literal(LiteralKind::Numeric(num)))),
-                        LiteralKind::StringLiteral(str) => Some(ExpressionKind::Primary(Literal(LiteralKind::StringLiteral(str)))),
-                        LiteralKind::RegEx(regex) => Some(ExpressionKind::Primary(RegExLiteral(regex)))
+                        LitKind::BigIntSuffix(bis) => Some(ExprKind::Primary(Lit(LitKind::BigIntSuffix(bis)))),
+                        LitKind::Bool(bool) => Some(ExprKind::Primary(Lit(LitKind::Bool(bool)))),
+                        LitKind::Dec(dec) => Some(ExprKind::Primary(Lit(LitKind::Dec(dec)))),
+                        LitKind::DecimalBigInteger(dbi) => Some(ExprKind::Primary(Lit(LitKind::DecimalBigInteger(dbi)))),
+                        LitKind::DecimalInteger(di) => Some(ExprKind::Primary(Lit(LitKind::DecimalInteger(di)))),
+                        LitKind::NonDecimalInteger(ndi) => Some(ExprKind::Primary(Lit(LitKind::NonDecimalInteger(ndi)))),
+                        LitKind::Null => Some(ExprKind::Primary(Lit(LitKind::Null))),
+                        LitKind::Num(num) => Some(ExprKind::Primary(Lit(LitKind::Num(num)))),
+                        LitKind::String(str) => Some(ExprKind::Primary(Lit(LitKind::String(str)))),
+                        LitKind::RegEx(regex) => Some(ExprKind::Primary(RegExLiteral(regex)))
                     }
                 }
                 TokenKind::Punc(_) => todo!(),
@@ -175,7 +180,7 @@ impl Parser {
         }
     }
 
-    fn parse_let_decl(&mut self) -> Result<LetDeclaration, ParseError> {
+    fn parse_let_decl(&mut self) -> Result<LetDecl, ParseError> {
 
         let statement = self.ts.borrow_mut()
             .next(3)
@@ -183,7 +188,7 @@ impl Parser {
 
         let id;
         match statement[1].clone() {
-            TokenKind::Identifier(val) => {id = val }
+            TokenKind::Id(val) => {id = val }
             _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
@@ -192,18 +197,18 @@ impl Parser {
         }
 
         match self.parse_expression() {
-            Some(expr) => Ok(LetDeclaration{ identifier: id, expression: expr }),
+            Some(expr) => Ok(LetDecl { identifier: id, expression: expr }),
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
     }
 
-    fn parse_const_decl(&mut self) -> Result<ConstDeclaration, ParseError> {
+    fn parse_const_decl(&mut self) -> Result<ConstDecl, ParseError> {
 
         let statement = self.ts.borrow_mut().next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
         match statement[1].clone() {
-            TokenKind::Identifier(val) => {id = val }
+            TokenKind::Id(val) => {id = val }
             _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
@@ -212,12 +217,12 @@ impl Parser {
         }
 
         match self.parse_expression() {
-            Some(expr) => Ok(ConstDeclaration{ identifier: id, expression: expr }),
+            Some(expr) => Ok(ConstDecl { identifier: id, expression: expr }),
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
     }
 
-    fn parse_if_statement(&mut self) -> Result<IfStatement, ParseError> {
+    fn parse_if_statement(&mut self) -> Result<IfStmt, ParseError> {
         let if_start = self.ts.borrow_mut().next(2).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         if if_start[0] != TokenKind::Keyword(KeywordKind::If) {
@@ -238,7 +243,7 @@ impl Parser {
                 }
                 self.ts.borrow_mut().bump();
 
-                Ok(IfStatement { condition: expr, body: self.parse_block()? })
+                Ok(IfStmt { cond: expr, body: self.parse_block()? })
             }
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
@@ -247,8 +252,9 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::token::LitKind;
     use super::Parser;
-    use super::ast::NodeKind;
+    use super::ast::{AdditiveExpr, BlockStmt, DeclKind, ExprKind, LetDecl, LexicalKind, NodeKind, PrimaryExprKind, StmtKind};
 
     #[test]
     fn test_decl() {
@@ -258,8 +264,17 @@ mod tests {
         assert!(res.is_ok());
         let mut ast = res.unwrap();
         let root = ast.get_root();
-        assert_eq!(root.node_kind, NodeKind::Module(module.into()));
-        assert_eq!(root.get_children().len(), 3);
+        assert_eq!(root.node_kind, NodeKind::Mod(module.into()));
+        let block = root.get_children();
+        assert_eq!(block.len(), 1);
+        let statements = block.first().unwrap();
+        assert_eq!(statements.node_kind, NodeKind::Stmt(StmtKind::Block));
+        assert_eq!(statements.get_children()[0].node_kind, NodeKind::Stmt(StmtKind::Decl(DeclKind::Lexical(LexicalKind::Let(LetDecl { identifier: "five".into(), expression: ExprKind::Primary(PrimaryExprKind::Lit(LitKind::Num(5))) })))));
+        assert_eq!(statements.get_children()[1].node_kind, NodeKind::Stmt(StmtKind::Decl(DeclKind::Lexical(LexicalKind::Let(LetDecl { identifier: "six".into(), expression: ExprKind::Primary(PrimaryExprKind::Lit(LitKind::Num(6))) })))));
+        assert_eq!(statements.get_children()[2].node_kind, NodeKind::Stmt(StmtKind::Decl(DeclKind::Lexical(LexicalKind::Let(LetDecl { identifier: "added".into(), expression: ExprKind::Additive(Box::new(AdditiveExpr {
+            lhs: ExprKind::Primary(PrimaryExprKind::Id("five".into())),
+            rhs: ExprKind::Primary(PrimaryExprKind::Id("six".into()))
+        }))})))));
     }
 
     #[test]

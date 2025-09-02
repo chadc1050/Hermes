@@ -4,7 +4,7 @@ use std::rc::Rc;
 use super::reader::Reader;
 
 use super::token::{
-    is_removable, map_keyword, BooleanKind, BraceKind, BracketKind, LineTerminatorKind, LiteralKind, OpKind, ParenthesesKind, PuncKind, TokenKind,
+    is_removable, map_keyword, BooleanKind, BraceKind, BracketKind, LineTerminatorKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind,
     WhiteSpaceKind,
 };
 
@@ -259,7 +259,7 @@ impl Lexer {
                         word.push(peek);
                     } else if peek == '"' {
                         reader.bump();
-                        return Ok(TokenKind::Literal(LiteralKind::StringLiteral(word)));
+                        return Ok(TokenKind::Lit(LitKind::String(word)));
                     }
                 }
                 None => {
@@ -282,11 +282,11 @@ impl Lexer {
                         if let Some(keyword) = map_keyword(&word) {
                             return Ok(TokenKind::Keyword(keyword));
                         } else if word == "true" {
-                            return Ok(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::True)));
+                            return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::True)));
                         } else if word == "false" {
-                            return Ok(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::False)));
+                            return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::False)));
                         } else {
-                            return Ok(TokenKind::Identifier(word));
+                            return Ok(TokenKind::Id(word));
                         }
                     }
                 }
@@ -294,11 +294,11 @@ impl Lexer {
                     if let Some(keyword) = map_keyword(&word) {
                         return Ok(TokenKind::Keyword(keyword));
                     } else if word == "true" {
-                        return Ok(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::True)));
+                        return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::True)));
                     } else if word == "false" {
-                        return Ok(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::False)));
+                        return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::False)));
                     } else {
-                        return Ok(TokenKind::Identifier(word));
+                        return Ok(TokenKind::Id(word));
                     }
                 }
             }
@@ -316,10 +316,10 @@ impl Lexer {
                         val.push(peek);
                         reader.bump();
                     } else {
-                        return Ok(TokenKind::Literal(LiteralKind::Numeric(val.parse().unwrap())));
+                        return Ok(TokenKind::Lit(LitKind::Num(val.parse().unwrap())));
                     }
                 }
-                None => return Ok(TokenKind::Literal(LiteralKind::Numeric(val.parse().unwrap()))),
+                None => return Ok(TokenKind::Lit(LitKind::Num(val.parse().unwrap()))),
             }
         }
     }
@@ -340,7 +340,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::token::{BooleanKind, KeywordKind, LiteralKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+    use crate::parser::token::{BooleanKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 
     use super::Lexer;
 
@@ -348,8 +348,8 @@ mod tests {
     fn test_tokenize() {
         let mut lexer = Lexer::init("testing 123");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Identifier("testing".into()), res[0]);
-        assert_eq!(TokenKind::Literal(LiteralKind::Numeric(123)), res[1]);
+        assert_eq!(TokenKind::Id("testing".into()), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::Num(123)), res[1]);
     }
 
     #[test]
@@ -374,15 +374,15 @@ mod tests {
     fn test_boolean() {
         let mut lexer = Lexer::init("true false");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::True)), res[0]);
-        assert_eq!(TokenKind::Literal(LiteralKind::Boolean(BooleanKind::False)), res[1]);
+        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::True)), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::False)), res[1]);
     }
 
     #[test]
     fn test_string_literal() {
         let mut lexer = Lexer::init("\"true\"");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Literal(LiteralKind::StringLiteral("true".into())), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::String("true".into())), res[0]);
     }
 
     #[test]
@@ -390,12 +390,12 @@ mod tests {
         let mut lexer = Lexer::init("let test = new Tokenizer(\"debugger\");");
         let res = lexer.tokenize();
         assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0]);
-        assert_eq!(TokenKind::Identifier("test".into()), res[1]);
+        assert_eq!(TokenKind::Id("test".into()), res[1]);
         assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2]);
         assert_eq!(TokenKind::Keyword(KeywordKind::New), res[3]);
-        assert_eq!(TokenKind::Identifier("Tokenizer".into()), res[4]);
+        assert_eq!(TokenKind::Id("Tokenizer".into()), res[4]);
         assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)), res[5]);
-        assert_eq!(TokenKind::Literal(LiteralKind::StringLiteral("debugger".into())), res[6]);
+        assert_eq!(TokenKind::Lit(LitKind::String("debugger".into())), res[6]);
         assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)), res[7]);
         assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[8]);
     }
@@ -437,16 +437,16 @@ mod tests {
         let mut lexer = Lexer::init("let x = await y;");
         let res = lexer.tokenize();
         assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0]);
-        assert_eq!(TokenKind::Identifier("x".into()), res[1]);
+        assert_eq!(TokenKind::Id("x".into()), res[1]);
         assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2]);
         assert_eq!(TokenKind::Keyword(KeywordKind::Await), res[3]);
-        assert_eq!(TokenKind::Identifier("y".into()), res[4]);
+        assert_eq!(TokenKind::Id("y".into()), res[4]);
     }
 
     #[test]
     fn test_numerics() {
         let mut lexer = Lexer::init("356 ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Literal(LiteralKind::Numeric(356)), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::Num(356)), res[0]);
     }
 }
