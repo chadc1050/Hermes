@@ -1,6 +1,6 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpression, ConstDeclaration, DeclarationKind, ExpressionKind, IfStatement, LetDeclaration, LexicalKind, Node, NodeKind, PrimaryExpressionKind, StatementKind, AST};
+use crate::parser::ast::{AdditiveExpression, BlockStatement, ConstDeclaration, DeclarationKind, ExpressionKind, IfStatement, LetDeclaration, LexicalKind, Node, NodeKind, PrimaryExpressionKind, StatementKind, AST};
 use crate::parser::ast::DeclarationKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::PrimaryExpressionKind::{Identifier, Literal, RegExLiteral};
@@ -27,27 +27,27 @@ pub struct ParseError {
 
 /// Parses source code to AST based on [ECMAScript Lexical Grammar](https://262.ecma-international.org/#sec-intro).
 pub struct Parser {
-    lexer: Lexer,
+    ts: Rc<RefCell<Reader<TokenKind>>>
 }
 
 impl Parser {
     pub fn init(source: &str) -> Self {
-        Parser { lexer: Lexer::init(source) }
+        let tokens = Lexer::init(source).tokenize();
+        let ts = Rc::new(RefCell::new(Reader::init(tokens)));
+        Parser { ts }
     }
 
-    pub fn parse(&mut self) -> Result<AST, ParseError> {
-        let tokens = self.lexer.tokenize();
+    pub fn parse(&mut self, file_name: String) -> Result<AST, ParseError> {
 
-        let ts = Rc::new(RefCell::new(Reader::init(tokens)));
-
-        let mut ast = AST::new();
+        let mut ast = AST::new(file_name);
 
         let mut in_statement = false;
         let curr_node: &mut Node = ast.get_root();
 
         loop {
-            let mut ref_ts = ts.borrow_mut();
-            match ref_ts.peek_single() {
+            let initial_token = self.ts.borrow().peek_single();
+
+            match initial_token {
                 Some(token) => {
                     match token {
                         TokenKind::Eof => {
@@ -56,21 +56,21 @@ impl Parser {
                         TokenKind::Identifier(_) => {}
                         TokenKind::Keyword(k) => {
                             match k {
-                                KeywordKind::Const => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Const(Self::parse_const_decl(ref_ts)?))))),
-                                KeywordKind::Let => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Let(Self::parse_let_decl(ref_ts)?))))),
-                                KeywordKind::If => curr_node.add_child(Node::new(NodeKind::Statement(StatementKind::If(Self::parse_if_statement(ref_ts)?)))),
+                                KeywordKind::Const => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Const(self.parse_const_decl()?))))),
+                                KeywordKind::Let => curr_node.add_child(Node::new(NodeKind::Declaration(Lexical(Let(self.parse_let_decl()?))))),
+                                KeywordKind::If => curr_node.add_child(Node::new(NodeKind::Statement(StatementKind::If(self.parse_if_statement()?)))),
                                 _ => {}
                             }
                         }
                         TokenKind::LineTerminator(_) => {
-                            ref_ts.bump();
+                            self.ts.borrow_mut().bump();
                             in_statement = false;
                         }
                         TokenKind::Literal(_) => {}
                         TokenKind::Punc(punc) => {
                             match punc {
                                 PuncKind::SemiColon => {
-                                    ref_ts.bump();
+                                    self.ts.borrow_mut().bump();
                                     in_statement = false;
                                 }
                                 _ => todo!()
@@ -89,12 +89,17 @@ impl Parser {
         Ok(ast)
     }
 
-    fn parse_expression(mut ts: RefMut<Reader<TokenKind>>) -> Option<ExpressionKind> {
-        let first = ts.next_single();
+    fn parse_block(&mut self) -> Result<BlockStatement, ParseError> {
+        Ok(BlockStatement{statements: vec![]})
+    }
+
+    fn parse_expression(&mut self) -> Option<ExpressionKind> {
+        let mut ref_ts = self.ts.borrow_mut();
+        let first = ref_ts.next_single();
         match first {
             Some(token) => match token {
                 TokenKind::Identifier(first_id) => {
-                    let second = ts.next_single();
+                    let second = ref_ts.next_single();
                     match second {
                         Some(second_token) => {
                             match second_token {
@@ -109,7 +114,7 @@ impl Parser {
                                         PuncKind::Op(op) => {
                                             match op {
                                                 OpKind::Addition => {
-                                                    let third = ts.next_single();
+                                                    let third = ref_ts.next_single();
                                                     match third {
                                                         Some(third_token) => {
                                                             match third_token {
@@ -147,7 +152,7 @@ impl Parser {
                     _ => None
                 }
                 TokenKind::Literal(literal) => {
-                    ts.bump();
+                    ref_ts.bump();
                     match literal {
                         LiteralKind::BigIntSuffix(bis) => Some(ExpressionKind::Primary(Literal(LiteralKind::BigIntSuffix(bis)))),
                         LiteralKind::Boolean(bool) => Some(ExpressionKind::Primary(Literal(LiteralKind::Boolean(bool)))),
@@ -170,9 +175,11 @@ impl Parser {
         }
     }
 
-    fn parse_let_decl(mut ts: RefMut<Reader<TokenKind>>) -> Result<LetDeclaration, ParseError> {
+    fn parse_let_decl(&mut self) -> Result<LetDeclaration, ParseError> {
 
-        let statement = ts.next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+        let statement = self.ts.borrow_mut()
+            .next(3)
+            .ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
         match statement[1].clone() {
@@ -184,15 +191,15 @@ impl Parser {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        match Parser::parse_expression(ts) {
+        match self.parse_expression() {
             Some(expr) => Ok(LetDeclaration{ identifier: id, expression: expr }),
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
     }
 
-    fn parse_const_decl(mut ts: RefMut<Reader<TokenKind>>) -> Result<ConstDeclaration, ParseError> {
+    fn parse_const_decl(&mut self) -> Result<ConstDeclaration, ParseError> {
 
-        let statement = ts.next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+        let statement = self.ts.borrow_mut().next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
         match statement[1].clone() {
@@ -204,35 +211,34 @@ impl Parser {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        match Parser::parse_expression(ts) {
+        match self.parse_expression() {
             Some(expr) => Ok(ConstDeclaration{ identifier: id, expression: expr }),
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
     }
 
-    fn parse_if_statement(mut ts: RefMut<Reader<TokenKind>>) -> Result<IfStatement, ParseError> {
-        let open = ts.next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
-        if open != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)) {
+    fn parse_if_statement(&mut self) -> Result<IfStatement, ParseError> {
+        let if_start = self.ts.borrow_mut().next(2).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+
+        if if_start[0] != TokenKind::Keyword(KeywordKind::If) {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        let sub_ts = RefCell::new(
-            Reader::init(
-                ts.collect_until(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)))
-            )
-        );
+        if if_start[1] != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)) {
+            return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
+        }
 
-        let expr = Self::parse_expression(sub_ts.borrow_mut());
+        let expr = self.parse_expression();
 
         match expr {
             Some(expr) => {
-                let close = ts.next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+                let close = self.ts.borrow_mut().next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
                 if close != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)) {
                     return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
                 }
-                ts.bump();
+                self.ts.borrow_mut().bump();
 
-                Ok(IfStatement { condition: expr, body: vec![] })
+                Ok(IfStatement { condition: expr, body: self.parse_block()? })
             }
             None => Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
@@ -246,19 +252,21 @@ mod tests {
 
     #[test]
     fn test_decl() {
+        let module = "Test";
         let mut parser = Parser::init("let five = 5;\n let six = 6\n let added = five + six");
-        let res = parser.parse();
+        let res = parser.parse(module.into());
         assert!(res.is_ok());
         let mut ast = res.unwrap();
         let root = ast.get_root();
-        assert_eq!(root.node_kind, NodeKind::Module);
+        assert_eq!(root.node_kind, NodeKind::Module(module.into()));
         assert_eq!(root.get_children().len(), 3);
     }
 
     #[test]
     fn test_if() {
+        let module = "Test";
         let mut parser = Parser::init("let y = 5;\nif (y == 5) {\nreturn;\n}");
-        let res = parser.parse();
+        let res = parser.parse(module.into());
         assert!(res.is_ok());
         let mut ast = res.unwrap();
         let root = ast.get_root();

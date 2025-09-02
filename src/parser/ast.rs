@@ -3,7 +3,7 @@ use crate::parser::token::{LiteralKind, TokenKind};
 
 #[derive(Debug, PartialEq)]
 pub enum NodeKind {
-    Module,
+    Module(String),
     Statement(StatementKind),
     Declaration(DeclarationKind),
     Expression(ExpressionKind),
@@ -11,7 +11,7 @@ pub enum NodeKind {
 
 #[derive(Debug, PartialEq)]
 pub enum StatementKind {
-    Block,
+    Block(BlockStatement),
     Variable,
     Empty,
     Expression,
@@ -96,9 +96,14 @@ pub struct AdditiveExpression {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct BlockStatement {
+    pub statements: Vec<StatementKind>
+}
+
+#[derive(Debug, PartialEq)]
 pub struct IfStatement {
     pub condition: ExpressionKind,
-    pub body: Vec<Node>
+    pub body: BlockStatement,
 }
 
 #[derive(Debug, PartialEq)]
@@ -134,9 +139,9 @@ pub struct AST {
 }
 
 impl AST {
-    pub fn new() -> Self {
+    pub fn new(module: String) -> Self {
         AST {
-            root: Node::new(NodeKind::Module),
+            root: Node::new(NodeKind::Module(module)),
         }
     }
 

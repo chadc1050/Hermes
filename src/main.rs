@@ -16,28 +16,35 @@ struct Cli {
 
 fn main() {
     let args = Cli::parse();
-    let file = args.file;
+    let file_name = args.file;
 
-    if !file.ends_with(".hermes") {
+    if !file_name.ends_with(".hermes") {
         panic!("Invalid file type, must be of file type hs!")
     }
 
-    let mut file = match File::open(file) {
+    let mut file = match File::open(&file_name) {
         Ok(file) => file,
         Err(_) => panic!("Unknown file!"),
     };
 
     let mut source = String::new();
+
     match file.read_to_string(&mut source) {
         Ok(_) => {
             // Successfully read the file contents
             println!("Successfully read file!");
+
+            let module_name = file_name.split('/')
+                .collect::<Vec<&str>>()
+                .last()
+                .unwrap()
+                .to_string();
+            
+            let ast = Parser::init(&source).parse(module_name);
         }
         Err(error) => {
             panic!("Failed to read the file: {}", error);
         }
     }
 
-    let mut parser = Parser::init(&source);
-    let ast = parser.parse();
 }
