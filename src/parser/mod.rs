@@ -98,6 +98,7 @@ impl Parser {
         Ok(BlockStmt { stmts: vec![]})
     }
 
+    #[inline]
     fn parse_expression(&mut self) -> Option<ExprKind> {
         let mut ref_ts = self.ts.borrow_mut();
         let first = ref_ts.next_single();
@@ -137,6 +138,21 @@ impl Parser {
                                                     }
                                                 }
                                                 OpKind::Multiplication => todo!(),
+                                                OpKind::Equal => {
+                                                    let third = ref_ts.next_single();
+                                                    match third {
+                                                        Some(third_token) => match third_token {
+                                                            TokenKind::Id(_) => todo!(),
+                                                            TokenKind::Keyword(_) => todo!(),
+                                                            TokenKind::Lit(lit) => {
+                                                                Some(todo!())
+                                                            }
+                                                            TokenKind::Punc(_) => todo!(),
+                                                            _ => None
+                                                        },
+                                                        None => None
+                                                    }
+                                                }
                                                 _ => todo!()
                                             }
                                         }
@@ -180,6 +196,7 @@ impl Parser {
         }
     }
 
+    #[inline]
     fn parse_let_decl(&mut self) -> Result<LetDecl, ParseError> {
 
         let statement = self.ts.borrow_mut()
@@ -202,9 +219,12 @@ impl Parser {
         }
     }
 
+    #[inline]
     fn parse_const_decl(&mut self) -> Result<ConstDecl, ParseError> {
 
-        let statement = self.ts.borrow_mut().next(3).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
+        let statement = self.ts.borrow_mut()
+            .next(3)
+            .ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
         match statement[1].clone() {
@@ -222,6 +242,7 @@ impl Parser {
         }
     }
 
+    #[inline]
     fn parse_if_statement(&mut self) -> Result<IfStmt, ParseError> {
         let if_start = self.ts.borrow_mut().next(2).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
@@ -254,7 +275,7 @@ impl Parser {
 mod tests {
     use crate::parser::token::LitKind;
     use super::Parser;
-    use super::ast::{AdditiveExpr, BlockStmt, DeclKind, ExprKind, LetDecl, LexicalKind, NodeKind, PrimaryExprKind, StmtKind};
+    use super::ast::{AdditiveExpr, DeclKind, ExprKind, LetDecl, LexicalKind, NodeKind, PrimaryExprKind, StmtKind};
 
     #[test]
     fn test_decl() {

@@ -1,10 +1,11 @@
 use std::{fs::File, io::Read};
-
 use clap::{command, Parser as CliParser};
-
+use inkwell::context::Context;
 use parser::Parser;
+use crate::llvm::LLVM;
 
 mod parser;
+mod llvm;
 
 #[derive(CliParser, Debug)]
 #[command(name = "hermes")]
@@ -39,8 +40,19 @@ fn main() {
                 .last()
                 .unwrap()
                 .to_string();
-            
-            let ast = Parser::init(&source).parse(module_name);
+
+            match Parser::init(&source).parse(module_name.clone()) {
+                Ok(ast) => {
+                    let llvm_ctx = Context::create();
+
+                    let llvm = LLVM::new(&llvm_ctx, &module_name);
+
+                    let ok = llvm.compile(&args.output);
+                }
+                Err(err) => {
+                    panic!("Error during parsing: {:?}", err);
+                }
+            }
         }
         Err(error) => {
             panic!("Failed to read the file: {}", error);

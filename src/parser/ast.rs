@@ -58,7 +58,7 @@ pub enum ExprKind {
     Primary(PrimaryExprKind),
     Additive(Box<AdditiveExpr>),
     Multiplicative,
-    ConditionalExpr
+    ConditionalExpr(Box<CondExpr>)
 }
 
 #[derive(Debug, PartialEq)]
@@ -96,6 +96,11 @@ pub struct AdditiveExpr {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct CondExpr {
+    pub condition: ExprKind,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct BlockStmt {
     pub stmts: Vec<StmtKind>
 }
@@ -112,7 +117,7 @@ pub struct Node {
     children: Vec<Node>,
 }
 
-impl Node {
+impl Node { 
     pub fn new(node_kind: NodeKind) -> Self {
         Node {
             node_kind,
