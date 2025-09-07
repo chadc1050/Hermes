@@ -4,6 +4,7 @@ use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, L
 use crate::parser::ast::DeclKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
+use crate::parser::lexer::LexerError;
 use crate::parser::reader::Reader;
 use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, Token, TokenKind};
 use self::lexer::Lexer;
@@ -31,10 +32,14 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn init(source: &str) -> Self {
-        let tokens = Lexer::init(source).tokenize();
-        let ts = Rc::new(RefCell::new(Reader::init(tokens)));
-        Parser { ts }
+    pub fn init(source: &str) -> Result<Self, LexerError> {
+        return match Lexer::init(source).tokenize() {
+            Ok(tokens) => {
+                let ts = Rc::new(RefCell::new(Reader::init(tokens)));
+                Ok(Parser { ts })
+            }
+            Err(err) => Err(err),
+        }
     }
 
     pub fn parse(&mut self, file_name: String) -> Result<AST, ParseError> {
@@ -280,7 +285,7 @@ mod tests {
     #[test]
     fn test_decl() {
         let module = "Test";
-        let mut parser = Parser::init("let five = 5;\n let six = 6\n let added = five + six");
+        let mut parser = Parser::init("let five = 5;\n let six = 6\n let added = five + six").unwrap();
         let res = parser.parse(module.into());
         assert!(res.is_ok());
         let mut ast = res.unwrap();
@@ -301,7 +306,7 @@ mod tests {
     #[test]
     fn test_if() {
         let module = "Test";
-        let mut parser = Parser::init("let y = 5;\nif (y == 5) {\nreturn;\n}");
+        let mut parser = Parser::init("let y = 5;\nif (y == 5) {\nreturn;\n}").unwrap();
         let res = parser.parse(module.into());
         assert!(res.is_ok());
         let mut ast = res.unwrap();

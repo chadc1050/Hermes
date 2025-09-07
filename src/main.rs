@@ -41,17 +41,22 @@ fn main() {
                 .unwrap()
                 .to_string();
 
-            match Parser::init(&source).parse(module_name.clone()) {
-                Ok(ast) => {
-                    let llvm_ctx = Context::create();
+            match Parser::init(&source) {
+                Ok(mut parser) => {
+                    match parser.parse(module_name.clone()) {
+                        Ok(ast) => {
+                            let llvm_ctx = Context::create();
 
-                    let llvm = LLVM::new(&llvm_ctx, &module_name);
+                            let llvm = LLVM::new(&llvm_ctx, &module_name);
 
-                    let ok = llvm.compile(&args.output);
+                            let ok = llvm.compile(&args.output);
+                        }
+                        Err(err) => {
+                            panic!("Error during parsing: {:?}", err);
+                        }
+                    }
                 }
-                Err(err) => {
-                    panic!("Error during parsing: {:?}", err);
-                }
+                Err(e) => panic!("{:?}", e),
             }
         }
         Err(error) => {
