@@ -53,6 +53,10 @@ impl<S> Reader<S> where S: Clone + PartialEq {
     pub fn skip(&mut self, n: usize) {
         self.cursor += n;
     }
+    
+    pub fn get_pos(&self) -> usize {
+        self.cursor
+    }
 
     pub fn collect_until(&mut self, until: S) -> Vec<S> {
 

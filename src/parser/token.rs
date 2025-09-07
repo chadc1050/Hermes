@@ -1,4 +1,16 @@
 #[derive(Debug, Clone, PartialEq)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub pos: usize,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, pos: usize) -> Self {
+        Self { kind, pos }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Comment(CommentKind),
     /// End of file

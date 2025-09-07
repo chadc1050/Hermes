@@ -3,10 +3,7 @@ use std::rc::Rc;
 
 use super::reader::Reader;
 
-use super::token::{
-    is_removable, map_keyword, BooleanKind, BraceKind, BracketKind, LineTerminatorKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind,
-    WhiteSpaceKind,
-};
+use super::token::{is_removable, map_keyword, BooleanKind, BraceKind, BracketKind, LineTerminatorKind, LitKind, OpKind, ParenthesesKind, PuncKind, Token, TokenKind, WhiteSpaceKind};
 
 pub struct Lexer {
     reader: Rc<RefCell<Reader<char>>>,
@@ -17,16 +14,16 @@ impl Lexer {
         Lexer { reader: Rc::new(RefCell::new(Reader::init(source.chars().collect::<Vec<char>>()))) }
     }
 
-    pub fn tokenize(&mut self) -> Vec<TokenKind> {
+    pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
 
         loop {
             match self.lex() {
                 Ok(token) => {
-                    if !is_removable(&token) {
+                    if !is_removable(&token.kind) {
                         tokens.push(token.clone());
                     }
-                    if token == TokenKind::Eof {
+                    if token.kind == TokenKind::Eof {
                         break;
                     }
                 }
@@ -37,8 +34,9 @@ impl Lexer {
         tokens
     }
 
-    fn lex(&self) -> Result<TokenKind, &str> {
+    fn lex(&self) -> Result<Token, &str> {
         let mut reader = self.reader.borrow_mut();
+        let pos = reader.get_pos();
         match reader.next_single() {
             Some(first) => {
                 if first.is_digit(10) {
@@ -51,12 +49,12 @@ impl Lexer {
 
                 match first {
                     '"' => self.lex_string_literal(&mut reader),
-                    '\t' => Ok(TokenKind::WhiteSpace(WhiteSpaceKind::HorizontalTabulation)),
-                    '\n' => Ok(TokenKind::LineTerminator(LineTerminatorKind::LineFeed)),
-                    '\r' => Ok(TokenKind::LineTerminator(LineTerminatorKind::CarriageReturn)),
-                    ' ' => Ok(TokenKind::WhiteSpace(WhiteSpaceKind::Space)),
-                    '(' => Ok(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left))),
-                    ')' => Ok(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right))),
+                    '\t' => Ok(Token::new(TokenKind::WhiteSpace(WhiteSpaceKind::HorizontalTabulation), pos)),
+                    '\n' => Ok(Token::new(TokenKind::LineTerminator(LineTerminatorKind::LineFeed), pos)),
+                    '\r' => Ok(Token::new(TokenKind::LineTerminator(LineTerminatorKind::CarriageReturn), pos)),
+                    ' ' => Ok(Token::new(TokenKind::WhiteSpace(WhiteSpaceKind::Space), pos)),
+                    '(' => Ok(Token::new(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)), pos)),
+                    ')' => Ok(Token::new(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)), pos)),
                     '=' => match reader.peek_single() {
                         Some(second) => match second {
                             '=' => {
@@ -65,16 +63,16 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::StrictEquality)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::StrictEquality)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Equal))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Equal)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Equal))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Equal)), pos)),
                                 }
                             }
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Assign))),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Assign))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), pos)),
                     },
                     '*' => match reader.peek_single() {
                         Some(second) => match second {
@@ -84,17 +82,17 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::ExponentialAssign)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::ExponentialAssign)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Exponential))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Exponential)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Exponential))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Exponential)), pos)),
                                 }
                             }
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::MultiplicationAssign))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Multiplication))),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::MultiplicationAssign)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Multiplication)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Multiplication))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Multiplication)), pos)),
                     },
                     '&' => match reader.peek_single() {
                         Some(second) => match second {
@@ -104,17 +102,17 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::AndAssign)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::AndAssign)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::And))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::And)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::And))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::And)), pos)),
                                 }
                             }
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitAndAssing))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd))),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAndAssing)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), pos)),
                     },
                     '|' => match reader.peek_single() {
                         Some(second) => match second {
@@ -124,34 +122,34 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::OrAssign)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::OrAssign)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Or))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Or)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Or))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Or)), pos)),
                                 }
                             }
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitOrAssign))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitOr))),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitOrAssign)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitOr)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::BitOr))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitOr)), pos)),
                     },
                     '^' => self.lex_assignable_operator(&mut reader, OpKind::BitXor, OpKind::BitXorAssign),
                     '+' => match reader.peek_single() {
                         Some(second) => match second {
-                            '+' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Increment))),
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::AdditonAssign))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Addition))),
+                            '+' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Increment)), pos)),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::AdditonAssign)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Addition)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Addition))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Addition)), pos)),
                     },
                     '-' => match reader.peek_single() {
                         Some(second) => match second {
-                            '-' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Decrement))),
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::SubtractionAssign))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Subtraction))),
+                            '-' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Decrement)), pos)),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::SubtractionAssign)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Subtraction)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Subtraction))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Subtraction)), pos)),
                     },
                     '/' => self.lex_assignable_operator(&mut reader, OpKind::Division, OpKind::DivisionAssign),
                     '%' => self.lex_assignable_operator(&mut reader, OpKind::Mod, OpKind::ModAssign),
@@ -167,23 +165,23 @@ impl Lexer {
                                                 Some(fourth) => match fourth {
                                                     '=' => {
                                                         reader.bump();
-                                                        Ok(TokenKind::Punc(PuncKind::Op(OpKind::UnsignedRightShiftAssign)))
+                                                        Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::UnsignedRightShiftAssign)), pos))
                                                     }
-                                                    _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::ZeroFillRightShift))),
+                                                    _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::ZeroFillRightShift)), pos)),
                                                 },
-                                                None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::ZeroFillRightShift))),
+                                                None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::ZeroFillRightShift)), pos)),
                                             }
                                         }
-                                        '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::RightShiftAssign))),
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::RightShift))),
+                                        '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::RightShiftAssign)), pos)),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::RightShift)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::RightShift))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::RightShift)), pos)),
                                 }
                             }
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThanEqual))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThan))),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThanEqual)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThan)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThan))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::GreaterThan)), pos)),
                     },
                     '<' => match reader.peek_single() {
                         Some(second) => match second {
@@ -193,27 +191,27 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::LeftShiftAssign)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LeftShiftAssign)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::LeftShift))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LeftShift)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::LeftShift))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LeftShift)), pos)),
                                 }
                             }
-                            '=' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::LessThanEqual))),
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::LessThan))),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LessThanEqual)), pos)),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LessThan)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::LessThan))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::LessThan)), pos)),
                     },
                     '!' => match reader.peek_single() {
                         Some(second) => match second {
                             '=' => {
                                 reader.bump();
-                                Ok(TokenKind::Punc(PuncKind::Op(OpKind::NotEqual)))
+                                Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::NotEqual)), pos))
                             }
-                            _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Not))),
+                            _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Not)), pos)),
                         },
-                        None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::Not))),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::Not)), pos)),
                     },
                     '?' => match reader.peek_single() {
                         Some(second) => match second {
@@ -223,34 +221,35 @@ impl Lexer {
                                     Some(third) => match third {
                                         '=' => {
                                             reader.bump();
-                                            Ok(TokenKind::Punc(PuncKind::Op(OpKind::NullishCoalescingAssign)))
+                                            Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::NullishCoalescingAssign)), pos))
                                         }
-                                        _ => Ok(TokenKind::Punc(PuncKind::Op(OpKind::NullishCoalescing))),
+                                        _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::NullishCoalescing)), pos)),
                                     },
-                                    None => Ok(TokenKind::Punc(PuncKind::Op(OpKind::OptionalChain))),
+                                    None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::OptionalChain)), pos)),
                                 }
                             }
-                            '.' => Ok(TokenKind::Punc(PuncKind::Op(OpKind::OptionalChain))),
+                            '.' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::OptionalChain)), pos)),
                             _ => Err("Invalid Token"),
                         },
                         None => Err("Invalid Token"),
                     },
-                    '.' => Ok(TokenKind::Punc(PuncKind::Dot)),
-                    ';' => Ok(TokenKind::Punc(PuncKind::SemiColon)),
-                    '[' => Ok(TokenKind::Punc(PuncKind::Bracket(BracketKind::Left))),
-                    ']' => Ok(TokenKind::Punc(PuncKind::Bracket(BracketKind::Right))),
-                    '{' => Ok(TokenKind::Punc(PuncKind::Brace(BraceKind::Left))),
-                    '}' => Ok(TokenKind::Punc(PuncKind::Brace(BraceKind::Right))),
-                    _ => Ok(TokenKind::Unicode(first.to_string())),
+                    '.' => Ok(Token::new(TokenKind::Punc(PuncKind::Dot), pos)),
+                    ';' => Ok(Token::new(TokenKind::Punc(PuncKind::SemiColon), pos)),
+                    '[' => Ok(Token::new(TokenKind::Punc(PuncKind::Bracket(BracketKind::Left)), pos)),
+                    ']' => Ok(Token::new(TokenKind::Punc(PuncKind::Bracket(BracketKind::Right)), pos)),
+                    '{' => Ok(Token::new(TokenKind::Punc(PuncKind::Brace(BraceKind::Left)), pos)),
+                    '}' => Ok(Token::new(TokenKind::Punc(PuncKind::Brace(BraceKind::Right)), pos)),
+                    _ => Ok(Token::new(TokenKind::Unicode(first.to_string()), pos)),
                 }
             }
-            None => return Ok(TokenKind::Eof),
+            None => Ok(Token::new(TokenKind::Eof, pos)),
         }
     }
 
     /// Handles alphabetic tokens encapsulated by
-    fn lex_string_literal(&self, reader: &mut Reader<char>) -> Result<TokenKind, &str> {
+    fn lex_string_literal(&self, reader: &mut Reader<char>) -> Result<Token, &str> {
         let mut word = String::new();
+        let pos = reader.get_pos();
         loop {
             match reader.peek_single() {
                 Some(peek) => {
@@ -259,7 +258,7 @@ impl Lexer {
                         word.push(peek);
                     } else if peek == '"' {
                         reader.bump();
-                        return Ok(TokenKind::Lit(LitKind::String(word)));
+                        return Ok(Token::new(TokenKind::Lit(LitKind::String(word)), pos));
                     }
                 }
                 None => {
@@ -270,8 +269,9 @@ impl Lexer {
     }
 
     /// Handles all alphabetic tokens not encapsulated by quotations (non-string literals)
-    fn lex_identifier(&self, reader: &mut Reader<char>, char: char) -> Result<TokenKind, &str> {
+    fn lex_identifier(&self, reader: &mut Reader<char>, char: char) -> Result<Token, &str> {
         let mut word = char.to_string();
+        let pos = reader.get_pos();
         loop {
             match reader.peek_single() {
                 Some(peek) => {
@@ -279,26 +279,26 @@ impl Lexer {
                         word.push(peek);
                         reader.bump();
                     } else {
-                        if let Some(keyword) = map_keyword(&word) {
-                            return Ok(TokenKind::Keyword(keyword));
+                        return if let Some(keyword) = map_keyword(&word) {
+                            Ok(Token::new(TokenKind::Keyword(keyword), pos))
                         } else if word == "true" {
-                            return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::True)));
+                            Ok(Token::new(TokenKind::Lit(LitKind::Bool(BooleanKind::True)), pos))
                         } else if word == "false" {
-                            return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::False)));
+                            Ok(Token::new(TokenKind::Lit(LitKind::Bool(BooleanKind::False)), pos))
                         } else {
-                            return Ok(TokenKind::Id(word));
+                            Ok(Token::new(TokenKind::Id(word), pos))
                         }
                     }
                 }
                 None => {
-                    if let Some(keyword) = map_keyword(&word) {
-                        return Ok(TokenKind::Keyword(keyword));
+                    return if let Some(keyword) = map_keyword(&word) {
+                        Ok(Token::new(TokenKind::Keyword(keyword), pos))
                     } else if word == "true" {
-                        return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::True)));
+                        Ok(Token::new(TokenKind::Lit(LitKind::Bool(BooleanKind::True)), pos))
                     } else if word == "false" {
-                        return Ok(TokenKind::Lit(LitKind::Bool(BooleanKind::False)));
+                        Ok(Token::new(TokenKind::Lit(LitKind::Bool(BooleanKind::False)), pos))
                     } else {
-                        return Ok(TokenKind::Id(word));
+                        Ok(Token::new(TokenKind::Id(word), pos))
                     }
                 }
             }
@@ -307,8 +307,9 @@ impl Lexer {
 
     /// Given a numeric character, parses the rest of the numeric and determines numeric variant.
     /// TODO: Need to check for decimals and non-decimal number types.
-    fn lex_numeric(&self, reader: &mut Reader<char>, char: char) -> Result<TokenKind, &str> {
+    fn lex_numeric(&self, reader: &mut Reader<char>, char: char) -> Result<Token, &str> {
         let mut val = char.to_string();
+        let pos = reader.get_pos();
         loop {
             match reader.peek_single() {
                 Some(peek) => {
@@ -316,24 +317,25 @@ impl Lexer {
                         val.push(peek);
                         reader.bump();
                     } else {
-                        return Ok(TokenKind::Lit(LitKind::Num(val.parse().unwrap())));
+                        return Ok(Token::new(TokenKind::Lit(LitKind::Num(val.parse().unwrap())), pos));
                     }
                 }
-                None => return Ok(TokenKind::Lit(LitKind::Num(val.parse().unwrap()))),
+                None => return Ok(Token::new(TokenKind::Lit(LitKind::Num(val.parse().unwrap())), pos)),
             }
         }
     }
 
-    fn lex_assignable_operator(&self, reader: &mut Reader<char>, operator: OpKind, assign: OpKind) -> Result<TokenKind, &str> {
+    fn lex_assignable_operator(&self, reader: &mut Reader<char>, operator: OpKind, assign: OpKind) -> Result<Token, &str> {
+        let pos = reader.get_pos();
         match reader.peek_single() {
             Some(second) => match second {
                 '=' => {
                     reader.bump();
-                    Ok(TokenKind::Punc(PuncKind::Op(assign)))
+                    Ok(Token::new(TokenKind::Punc(PuncKind::Op(assign)), pos))
                 }
-                _ => Ok(TokenKind::Punc(PuncKind::Op(operator))),
+                _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(operator)), pos)),
             },
-            None => Ok(TokenKind::Punc(PuncKind::Op(operator))),
+            None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(operator)), pos)),
         }
     }
 }
@@ -348,105 +350,105 @@ mod tests {
     fn test_tokenize() {
         let mut lexer = Lexer::init("testing 123");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Id("testing".into()), res[0]);
-        assert_eq!(TokenKind::Lit(LitKind::Num(123)), res[1]);
+        assert_eq!(TokenKind::Id("testing".into()), res[0].kind);
+        assert_eq!(TokenKind::Lit(LitKind::Num(123)), res[1].kind);
     }
 
     #[test]
     fn test_whitespace() {
         let mut lexer = Lexer::init(" ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Eof, res[0]);
+        assert_eq!(TokenKind::Eof, res[0].kind);
 
         let mut lexer = Lexer::init("");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Eof, res[0]);
+        assert_eq!(TokenKind::Eof, res[0].kind);
     }
 
     #[test]
     fn test_punctuation() {
         let mut lexer = Lexer::init(";");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[0].kind);
     }
 
     #[test]
     fn test_boolean() {
         let mut lexer = Lexer::init("true false");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::True)), res[0]);
-        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::False)), res[1]);
+        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::True)), res[0].kind);
+        assert_eq!(TokenKind::Lit(LitKind::Bool(BooleanKind::False)), res[1].kind);
     }
 
     #[test]
     fn test_string_literal() {
         let mut lexer = Lexer::init("\"true\"");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Lit(LitKind::String("true".into())), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::String("true".into())), res[0].kind);
     }
 
     #[test]
     fn test_string_identifier() {
         let mut lexer = Lexer::init("let test = new Tokenizer(\"debugger\");");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0]);
-        assert_eq!(TokenKind::Id("test".into()), res[1]);
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2]);
-        assert_eq!(TokenKind::Keyword(KeywordKind::New), res[3]);
-        assert_eq!(TokenKind::Id("Tokenizer".into()), res[4]);
-        assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)), res[5]);
-        assert_eq!(TokenKind::Lit(LitKind::String("debugger".into())), res[6]);
-        assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)), res[7]);
-        assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[8]);
+        assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0].kind);
+        assert_eq!(TokenKind::Id("test".into()), res[1].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2].kind);
+        assert_eq!(TokenKind::Keyword(KeywordKind::New), res[3].kind);
+        assert_eq!(TokenKind::Id("Tokenizer".into()), res[4].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)), res[5].kind);
+        assert_eq!(TokenKind::Lit(LitKind::String("debugger".into())), res[6].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)), res[7].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[8].kind);
     }
 
     #[test]
     fn test_operators() {
         let mut lexer = Lexer::init("+= ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::AdditonAssign)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::AdditonAssign)), res[0].kind);
 
         let mut lexer = Lexer::init("*= 3");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::MultiplicationAssign)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::MultiplicationAssign)), res[0].kind);
 
         let mut lexer = Lexer::init("**= 3");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::ExponentialAssign)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::ExponentialAssign)), res[0].kind);
 
         let mut lexer = Lexer::init("** 3");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Exponential)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Exponential)), res[0].kind);
 
         let mut lexer = Lexer::init("& ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), res[0].kind);
 
         let mut lexer = Lexer::init("&&= ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::AndAssign)), res[0]);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::AndAssign)), res[0].kind);
     }
 
     #[test]
     fn test_keywords() {
         let mut lexer = Lexer::init("await yield");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Keyword(KeywordKind::Await), res[0]);
-        assert_eq!(TokenKind::Keyword(KeywordKind::Yield), res[1]);
+        assert_eq!(TokenKind::Keyword(KeywordKind::Await), res[0].kind);
+        assert_eq!(TokenKind::Keyword(KeywordKind::Yield), res[1].kind);
 
         let mut lexer = Lexer::init("let x = await y;");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0]);
-        assert_eq!(TokenKind::Id("x".into()), res[1]);
-        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2]);
-        assert_eq!(TokenKind::Keyword(KeywordKind::Await), res[3]);
-        assert_eq!(TokenKind::Id("y".into()), res[4]);
+        assert_eq!(TokenKind::Keyword(KeywordKind::Let), res[0].kind);
+        assert_eq!(TokenKind::Id("x".into()), res[1].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Op(OpKind::Assign)), res[2].kind);
+        assert_eq!(TokenKind::Keyword(KeywordKind::Await), res[3].kind);
+        assert_eq!(TokenKind::Id("y".into()), res[4].kind);
     }
 
     #[test]
     fn test_numerics() {
         let mut lexer = Lexer::init("356 ");
         let res = lexer.tokenize();
-        assert_eq!(TokenKind::Lit(LitKind::Num(356)), res[0]);
+        assert_eq!(TokenKind::Lit(LitKind::Num(356)), res[0].kind);
     }
 }

@@ -1,11 +1,11 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, DeclKind, ExprKind, IfStmt, LetDecl, LexicalKind, Node, NodeKind, PrimaryExprKind, StmtKind, AST};
+use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, LetDecl, Node, NodeKind, PrimaryExprKind, StmtKind, AST};
 use crate::parser::ast::DeclKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
 use crate::parser::reader::Reader;
-use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, Token, TokenKind};
 use self::lexer::Lexer;
 
 mod reader;
@@ -27,7 +27,7 @@ pub struct ParseError {
 
 /// Parses source code to AST based on [ECMAScript Lexical Grammar](https://262.ecma-international.org/#sec-intro).
 pub struct Parser {
-    ts: Rc<RefCell<Reader<TokenKind>>>
+    ts: Rc<RefCell<Reader<Token>>>
 }
 
 impl Parser {
@@ -54,7 +54,7 @@ impl Parser {
 
             match initial_token {
                 Some(token) => {
-                    match token {
+                    match token.kind {
                         TokenKind::Eof => {
                             break;
                         }
@@ -103,12 +103,12 @@ impl Parser {
         let mut ref_ts = self.ts.borrow_mut();
         let first = ref_ts.next_single();
         match first {
-            Some(token) => match token {
+            Some(token) => match token.kind {
                 TokenKind::Id(first_id) => {
                     let second = ref_ts.next_single();
                     match second {
                         Some(second_token) => {
-                            match second_token {
+                            match second_token.kind {
                                 TokenKind::Id(_) => todo!(),
                                 TokenKind::Keyword(_) => todo!(),
                                 TokenKind::Lit(_) => todo!(),
@@ -123,7 +123,7 @@ impl Parser {
                                                     let third = ref_ts.next_single();
                                                     match third {
                                                         Some(third_token) => {
-                                                            match third_token {
+                                                            match third_token.kind {
                                                                 TokenKind::Id(second_id) => {
                                                                     Some(ExprKind::Additive(Box::new(AdditiveExpr {lhs: ExprKind::Primary(Id(first_id)), rhs: ExprKind::Primary(Id(second_id))})))
                                                                 },
@@ -141,7 +141,7 @@ impl Parser {
                                                 OpKind::Equal => {
                                                     let third = ref_ts.next_single();
                                                     match third {
-                                                        Some(third_token) => match third_token {
+                                                        Some(third_token) => match third_token.kind {
                                                             TokenKind::Id(_) => todo!(),
                                                             TokenKind::Keyword(_) => todo!(),
                                                             TokenKind::Lit(lit) => {
@@ -204,12 +204,12 @@ impl Parser {
             .ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
-        match statement[1].clone() {
+        match statement[1].clone().kind {
             TokenKind::Id(val) => {id = val }
             _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        if statement[2] != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
+        if statement[2].kind != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
@@ -227,12 +227,12 @@ impl Parser {
             .ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
         let id;
-        match statement[1].clone() {
+        match statement[1].clone().kind {
             TokenKind::Id(val) => {id = val }
             _ => return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        if statement[2] != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
+        if statement[2].kind != TokenKind::Punc(PuncKind::Op(OpKind::Assign)) {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
@@ -246,11 +246,11 @@ impl Parser {
     fn parse_if_statement(&mut self) -> Result<IfStmt, ParseError> {
         let if_start = self.ts.borrow_mut().next(2).ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
 
-        if if_start[0] != TokenKind::Keyword(KeywordKind::If) {
+        if if_start[0].kind != TokenKind::Keyword(KeywordKind::If) {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
-        if if_start[1] != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)) {
+        if if_start[1].kind != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)) {
             return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
         }
 
@@ -259,7 +259,7 @@ impl Parser {
         match expr {
             Some(expr) => {
                 let close = self.ts.borrow_mut().next_single().ok_or(ParseError { kind: ParseErrorKind::UnexpectedToken })?;
-                if close != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)) {
+                if close.kind != TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)) {
                     return Err(ParseError { kind: ParseErrorKind::UnexpectedToken })
                 }
                 self.ts.borrow_mut().bump();
