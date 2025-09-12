@@ -1,14 +1,14 @@
-use std::any::Any;
-use crate::parser::token::{LitKind, TokenKind};
+use serde::Serialize;
+use crate::parser::token::{LitKind};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum NodeKind {
     Mod(String),
     Stmt(StmtKind),
     Expr(ExprKind),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum StmtKind {
     Block,
     Decl(DeclKind),
@@ -26,26 +26,26 @@ pub enum StmtKind {
     Debugger
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum BreakableStmtKind {
     Switch,
     Iter
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum DeclKind {
     Hoistable(HoistableDeclKind),
     Class,
     Lexical(LexicalKind)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum LexicalKind {
     Let(LetDecl),
     Const(ConstDecl),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum HoistableDeclKind {
     Function,
     AsyncFunction,
@@ -53,7 +53,7 @@ pub enum HoistableDeclKind {
     AsyncGenerator,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum ExprKind {
     Primary(PrimaryExprKind),
     Additive(Box<AdditiveExpr>),
@@ -61,7 +61,7 @@ pub enum ExprKind {
     ConditionalExpr(Box<CondExpr>)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum PrimaryExprKind {
     This,
     Id(String),
@@ -77,47 +77,47 @@ pub enum PrimaryExprKind {
     TemplateLiteral,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct LetDecl {
     pub identifier: String,
     pub expression: ExprKind
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConstDecl {
     pub identifier: String,
     pub expression: ExprKind
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct AdditiveExpr {
     pub lhs: ExprKind,
     pub rhs: ExprKind
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct CondExpr {
     pub condition: ExprKind,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct BlockStmt {
     pub stmts: Vec<StmtKind>
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct IfStmt {
     pub cond: ExprKind,
     pub body: BlockStmt,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Node {
     pub node_kind: NodeKind,
     children: Vec<Node>,
 }
 
-impl Node { 
+impl Node {
     pub fn new(node_kind: NodeKind) -> Self {
         Node {
             node_kind,
@@ -143,14 +143,15 @@ impl Node {
 }
 
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct AST {
     root: Node,
 }
 
 impl AST {
-    pub fn new(module: String) -> Self {
+    pub fn new(module: &str) -> Self {
         AST {
-            root: Node::new(NodeKind::Mod(module)),
+            root: Node::new(NodeKind::Mod(module.into())),
         }
     }
 

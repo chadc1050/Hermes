@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Token {
     pub kind: TokenKind,
     pub pos: usize,
@@ -10,7 +12,7 @@ impl Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum TokenKind {
     Comment(CommentKind),
     /// End of file
@@ -28,7 +30,7 @@ pub enum TokenKind {
     Unicode(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum WhiteSpaceKind {
     ///
     Space,
@@ -36,7 +38,7 @@ pub enum WhiteSpaceKind {
     HorizontalTabulation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum LineTerminatorKind {
     /// \n
     LineFeed,
@@ -44,7 +46,7 @@ pub enum LineTerminatorKind {
     CarriageReturn,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum BooleanKind {
     /// true
     True,
@@ -52,13 +54,13 @@ pub enum BooleanKind {
     False,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum CommentKind {
     SingleLine(String),
     MultiLine(String),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum LitKind {
     BigIntSuffix(String),
     Bool(BooleanKind),
@@ -72,14 +74,14 @@ pub enum LitKind {
     RegEx(String),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum NonDecimalIntegerLiteralKind {
     BigInteger(String),
     OctalInteger(String),
     HexInteger(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum KeywordKind {
     Await,
     Break,
@@ -161,7 +163,7 @@ pub fn map_keyword(keyword_str: &str) -> Option<KeywordKind> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum PuncKind {
     Brace(BraceKind),
     Bracket(BracketKind),
@@ -173,7 +175,7 @@ pub enum PuncKind {
     SemiColon,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum ParenthesesKind {
     /// (
     Left,
@@ -181,7 +183,7 @@ pub enum ParenthesesKind {
     Right,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum BracketKind {
     /// [
     Left,
@@ -189,7 +191,7 @@ pub enum BracketKind {
     Right,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum BraceKind {
     /// {
     Left,
@@ -197,7 +199,7 @@ pub enum BraceKind {
     Right,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum OpKind {
     /// +
     Addition,

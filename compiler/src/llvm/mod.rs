@@ -15,8 +15,8 @@ impl<'ctx> LLVM<'ctx> {
         }
     }
 
-    pub fn compile(&self, output_path: &str) -> bool {
-        let res = fs::File::create(output_path);
+    pub fn compile(&self, output_file: &str) -> bool {
+        let res = fs::File::create(output_file);
         if res.is_err() {
             return false;
         }

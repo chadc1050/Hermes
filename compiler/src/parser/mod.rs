@@ -10,11 +10,9 @@ use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKi
 use self::lexer::Lexer;
 
 mod reader;
-
 mod lexer;
-
 mod token;
-mod ast;
+pub mod ast;
 
 #[derive(Debug)]
 pub enum ParseErrorKind {
@@ -42,9 +40,9 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self, file_name: String) -> Result<AST, ParseError> {
+    pub fn parse(&mut self, module: &str) -> Result<AST, ParseError> {
 
-        let mut ast = AST::new(file_name);
+        let mut ast = AST::new(module);
 
         let mut in_statement = false;
 

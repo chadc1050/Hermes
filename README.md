@@ -12,7 +12,7 @@ will be able to access the existing massive ecosystem of JS packages, whilst bei
    - Lexer
    - Parser 
 2. HLIR Lowering
-   - Type inferencing and Checking
+   - _Structural Type Inferencing_ and Checking
 3. MLIR Lowering
 4. LLVM Lowering
    - CodeGen
