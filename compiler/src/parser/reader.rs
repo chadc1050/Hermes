@@ -1,5 +1,3 @@
-use crate::parser::ast::ExprKind::Primary;
-
 #[derive(Clone, Debug)]
 pub struct Reader<S> {
     source: Vec<S>,
@@ -53,7 +51,15 @@ impl<S> Reader<S> where S: Clone + PartialEq {
     pub fn skip(&mut self, n: usize) {
         self.cursor += n;
     }
-    
+
+    pub fn has_next(&self) -> bool {
+        self.cursor < self.source.len()
+    }
+
+    pub fn end(&mut self) {
+        self.cursor = self.source.len() - 1
+    }
+
     pub fn get_pos(&self) -> usize {
         self.cursor
     }

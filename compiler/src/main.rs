@@ -70,8 +70,13 @@ fn main() {
             match Parser::init(&source) {
                 Ok(mut parser) => {
                     match parser.parse(module_name) {
-                        Ok(ast) => {
+                        Ok(res) => {
 
+                            if !res.errors.is_empty() {
+                                error!("Errors occurred while parsing!");
+                                exit(1);
+                            }
+                            
                             debug!("Successfully parsed ast!");
 
                             // Ensure the output directory exists
@@ -80,7 +85,7 @@ fn main() {
                             }
 
                             if args.emit_ast {
-                                emit_ast(&ast, args.output.clone())
+                                emit_ast(&res.ast, args.output.clone())
                             }
 
                             if !compile(module_name, args.output.clone()) {

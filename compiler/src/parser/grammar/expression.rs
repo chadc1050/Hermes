@@ -1,0 +1,110 @@
+use crate::parser::ast::{AdditiveExpr, ExprKind, PrimaryExprKind};
+use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
+use crate::parser::Parser;
+use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+
+impl Parser {
+    pub(crate) fn parse_paren_expr(&mut self) -> ExprKind {
+        self.expect(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Left)));
+        let expr = self.parse_expr();
+        self.expect(TokenKind::Punc(PuncKind::Parentheses(ParenthesesKind::Right)));
+        expr
+    }
+
+    pub(crate) fn parse_expr(&mut self) -> ExprKind {
+        let mut ref_ts = self.ts.borrow_mut();
+        let first = ref_ts.next_single();
+        match first {
+            Some(token) => match token.kind {
+                TokenKind::Id(first_id) => {
+                    let second = ref_ts.next_single();
+                    match second {
+                        Some(second_token) => {
+                            match second_token.kind {
+                                TokenKind::Id(_) => todo!(),
+                                TokenKind::Keyword(_) => todo!(),
+                                TokenKind::Lit(_) => todo!(),
+                                TokenKind::Punc(punc) => {
+                                    match punc {
+                                        PuncKind::Brace(_) => todo!(),
+                                        PuncKind::Bracket(_) => todo!(),
+                                        PuncKind::Dot => todo!(),
+                                        PuncKind::Op(op) => {
+                                            match op {
+                                                OpKind::Addition => {
+                                                    let third = ref_ts.next_single();
+                                                    match third {
+                                                        Some(third_token) => {
+                                                            match third_token.kind {
+                                                                TokenKind::Id(second_id) => {
+                                                                    ExprKind::Additive(Box::new(AdditiveExpr {lhs: ExprKind::Primary(Id(first_id)), rhs: ExprKind::Primary(Id(second_id))}))
+                                                                },
+                                                                TokenKind::Keyword(_) => todo!(),
+                                                                TokenKind::LineTerminator(_) => todo!(),
+                                                                TokenKind::Lit(_) => todo!(),
+                                                                TokenKind::Punc(_) => todo!(),
+                                                                _ => todo!()
+                                                            }
+                                                        }
+                                                        None => todo!()
+                                                    }
+                                                }
+                                                OpKind::Multiplication => todo!(),
+                                                OpKind::Equal => {
+                                                    let third = ref_ts.next_single();
+                                                    match third {
+                                                        Some(third_token) => match third_token.kind {
+                                                            TokenKind::Id(_) => todo!(),
+                                                            TokenKind::Keyword(_) => todo!(),
+                                                            TokenKind::Lit(lit) => {
+                                                                todo!()
+                                                            }
+                                                            TokenKind::Punc(_) => todo!(),
+                                                            _ => todo!()
+                                                        },
+                                                        None => todo!()
+                                                    }
+                                                }
+                                                _ => todo!()
+                                            }
+                                        }
+                                        PuncKind::Parentheses(_) => todo!(),
+                                        PuncKind::SemiColon => todo!(),
+                                    }
+                                }
+                                _ => todo!()
+                            }
+                        }
+                        None => todo!()
+                    }
+                }
+                TokenKind::Keyword(kw) => match kw {
+                    KeywordKind::This => {
+                        ExprKind::Primary(PrimaryExprKind::This)
+                    }
+                    _ => todo!()
+                }
+                TokenKind::Lit(literal) => {
+                    ref_ts.bump();
+                    match literal {
+                        LitKind::BigIntSuffix(bis) => ExprKind::Primary(Lit(LitKind::BigIntSuffix(bis))),
+                        LitKind::Bool(bool) => ExprKind::Primary(Lit(LitKind::Bool(bool))),
+                        LitKind::Dec(dec) => ExprKind::Primary(Lit(LitKind::Dec(dec))),
+                        LitKind::DecimalBigInteger(dbi) => ExprKind::Primary(Lit(LitKind::DecimalBigInteger(dbi))),
+                        LitKind::DecimalInteger(di) => ExprKind::Primary(Lit(LitKind::DecimalInteger(di))),
+                        LitKind::NonDecimalInteger(ndi) => ExprKind::Primary(Lit(LitKind::NonDecimalInteger(ndi))),
+                        LitKind::Null => ExprKind::Primary(Lit(LitKind::Null)),
+                        LitKind::Num(num) => ExprKind::Primary(Lit(LitKind::Num(num))),
+                        LitKind::String(str) => ExprKind::Primary(Lit(LitKind::String(str))),
+                        LitKind::RegEx(regex) => ExprKind::Primary(RegExLiteral(regex))
+                    }
+                }
+                TokenKind::Punc(_) => todo!(),
+                _ => todo!()
+            }
+            None => {
+                todo!()
+            }
+        }
+    }
+}

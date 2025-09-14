@@ -20,6 +20,7 @@ will be able to access the existing massive ecosystem of JS packages, whilst bei
 ### Feature Enhanced Compiler
 - Traits
 - Explicit References
+- Structural Type Inferencing
 
 ### StdLib
 - JS Interpreter Runtime Standard Library Compatibility

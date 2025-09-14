@@ -2,15 +2,8 @@ use serde::Serialize;
 use crate::parser::token::{LitKind};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub enum NodeKind {
-    Mod(String),
-    Stmt(StmtKind),
-    Expr(ExprKind),
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum StmtKind {
-    Block,
+    Block(BlockStmt),
     Decl(DeclKind),
     Variable,
     Empty,
@@ -108,54 +101,22 @@ pub struct BlockStmt {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct IfStmt {
     pub cond: ExprKind,
-    pub body: BlockStmt,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct Node {
-    pub node_kind: NodeKind,
-    children: Vec<Node>,
-}
-
-impl Node {
-    pub fn new(node_kind: NodeKind) -> Self {
-        Node {
-            node_kind,
-            children: Vec::new(),
-        }
-    }
-
-    pub fn get_children(&self) -> &Vec<Node> {
-        &self.children
-    }
-
-    pub fn get_children_mut(&mut self) -> &mut Vec<Node> {
-        &mut self.children
-    }
-
-    pub fn add_child(&mut self, child: Node) {
-        self.children.push(child);
-    }
-
-    pub fn clear_children(&mut self) {
-        self.children.clear();
-    }
+    pub body: Box<StmtKind>,
+    pub alternative: Option<Box<StmtKind>>,
 }
 
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct AST {
-    root: Node,
+    pub module: String,
+    pub body: Vec<StmtKind>,
 }
 
 impl AST {
     pub fn new(module: &str) -> Self {
         AST {
-            root: Node::new(NodeKind::Mod(module.into())),
+            module: module.to_string(),
+            body: Vec::new(),
         }
-    }
-
-    pub fn get_root(&mut self) -> &mut Node {
-        &mut self.root
     }
 }
