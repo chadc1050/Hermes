@@ -1,5 +1,6 @@
 ![Logo](assets/logo.png)
 <div align="center">
+    <img src="https://tokei.rs/b1/github/chadc1050/hermes"/>
     <img src="https://github.com/chadc1050/Hermes/actions/workflows/windows-build.yml/badge.svg"/>
     <img src="https://github.com/chadc1050/Hermes/actions/workflows/linux-build.yml/badge.svg"/>
 </div>
