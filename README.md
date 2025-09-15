@@ -1,8 +1,10 @@
-# Hermes
-[![Windows](https://github.com/chadc1050/Hermes/actions/workflows/windows-build.yml/badge.svg)](https://github.com/chadc1050/Hermes/actions/workflows/windows-build.yml)
-[![Linux Run](https://github.com/chadc1050/Hermes/actions/workflows/linux-build.yml/badge.svg)](https://github.com/chadc1050/Hermes/actions/workflows/linux-build.yml)
+![Logo](assets/logo.png)
+<div align="center">
+    <img src="https://github.com/chadc1050/Hermes/actions/workflows/windows-build.yml/badge.svg"/>
+    <img src="https://github.com/chadc1050/Hermes/actions/workflows/linux-build.yml/badge.svg"/>
+</div>
 
-Hermes aims to be a drop in replacement for JS to allow for seamless opt in for WASM targeting. It will be a super set of JS, with additional opt in features to improve performance. With Hermes, you will be able to take any existing JS package and easily compile it with minimal overhead. The benefit of this is ultimatley that the developer 
+Hermes aims to be a drop in replacement and extension for JS to allow for seamless opt in for WASM targeting. It will be a super set of JS, with additional opt in features to improve performance. With Hermes, you will be able to take any existing JS package and easily compile it with minimal overhead. The benefit of this is ultimatley that the developer 
 will be able to access the existing massive ecosystem of JS packages, whilst being able to write JS interopable code. 
 
 ## Roadmap
