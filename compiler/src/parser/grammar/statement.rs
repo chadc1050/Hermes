@@ -1,6 +1,7 @@
 use crate::parser::ast::DeclKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::{BlockStmt, ConstDecl, IfStmt, LetDecl, StmtKind};
+use crate::parser::ast::StmtKind::Empty;
 use crate::parser::ParseErrorKind::UnexpectedToken;
 use crate::parser::Parser;
 use crate::parser::token::{BraceKind, KeywordKind, OpKind, PuncKind, TokenKind};
@@ -31,7 +32,7 @@ impl Parser {
                 match punc {
                     PuncKind::SemiColon => {
                         self.bump();
-                        None
+                        Some(Empty)
                     }
                     _ => todo!()
                 }
@@ -65,17 +66,21 @@ impl Parser {
         self.expect(Keyword(KeywordKind::Let));
 
         let mut id = String::new();
-        match self.next().kind {
+        match self.next_kind() {
             TokenKind::Id(val) => {id = val }
             t => self.set_fatal_error(UnexpectedToken(t))
         }
 
         self.expect(TokenKind::Punc(PuncKind::Op(OpKind::Assign)));
 
-        LetDecl {
+        let let_decl = LetDecl {
             identifier: id,
             expression: self.parse_expr()
-        }
+        };
+
+        self.eat(TokenKind::Punc(PuncKind::SemiColon));
+
+        let_decl
     }
 
     fn parse_const_decl_stmt(&mut self) -> ConstDecl {
@@ -90,10 +95,14 @@ impl Parser {
 
         self.expect(TokenKind::Punc(PuncKind::Op(OpKind::Assign)));
 
-        ConstDecl {
+        let const_decl = ConstDecl {
             identifier: id,
             expression: self.parse_expr()
-        }
+        };
+
+        self.eat(TokenKind::Punc(PuncKind::SemiColon));
+
+        const_decl
     }
 
     fn parse_if_stmt(&mut self) -> IfStmt {

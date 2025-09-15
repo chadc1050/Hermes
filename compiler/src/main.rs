@@ -5,7 +5,7 @@ use std::process::exit;
 use clap::{command, Parser as CliParser};
 use inkwell::context::Context;
 use parser::Parser;
-use parser::ast::AST;
+use parser::ast::Module;
 use crate::llvm::LLVM;
 use crate::logger::{set_log_level, LogLevel};
 
@@ -113,7 +113,7 @@ fn main() {
         llvm.compile(&binary_file_name)
     }
 
-    fn emit_ast(ast: &AST, output: String) {
+    fn emit_ast(ast: &Module, output: String) {
         debug!("Emitting AST!");
         let serialized = serde_json::to_string_pretty(&ast).unwrap();
         let ast_file_name = output + "/ast.json";

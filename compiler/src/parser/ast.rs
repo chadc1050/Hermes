@@ -2,6 +2,21 @@ use serde::Serialize;
 use crate::parser::token::{LitKind};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Module {
+    pub module_name: String,
+    pub body: Vec<StmtKind>,
+}
+
+impl Module {
+    pub fn new(module: &str) -> Self {
+        Module {
+            module_name: module.to_string(),
+            body: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum StmtKind {
     Block(BlockStmt),
     Decl(DeclKind),
@@ -103,20 +118,4 @@ pub struct IfStmt {
     pub cond: ExprKind,
     pub body: Box<StmtKind>,
     pub alternative: Option<Box<StmtKind>>,
-}
-
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct AST {
-    pub module: String,
-    pub body: Vec<StmtKind>,
-}
-
-impl AST {
-    pub fn new(module: &str) -> Self {
-        AST {
-            module: module.to_string(),
-            body: Vec::new(),
-        }
-    }
 }

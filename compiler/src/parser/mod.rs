@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, LetDecl, PrimaryExprKind, StmtKind, AST};
+use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, LetDecl, PrimaryExprKind, StmtKind, Module};
 use crate::parser::ast::DeclKind::Lexical;
 use crate::parser::ast::LexicalKind::{Const, Let};
 use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
@@ -28,13 +28,14 @@ pub struct ParseError {
 }
 
 pub struct ParseResult {
-    pub ast: AST,
+    pub ast: Module,
     pub errors: Vec<ParseError>,
 }
 
 /// Parses source code to AST based on [ECMAScript Lexical Grammar](https://262.ecma-international.org/#sec-intro).
 pub struct Parser {
     ts: Rc<RefCell<Reader<Token>>>,
+    curr_token: Token,
     fatal_error: Option<ParseError>,
     errors: Vec<ParseError>,
 }
@@ -44,7 +45,8 @@ impl Parser {
         match Lexer::init(source).tokenize() {
             Ok(tokens) => {
                 let ts = Rc::new(RefCell::new(Reader::init(tokens)));
-                Ok(Parser { ts, fatal_error: None, errors: Vec::new() })
+                let curr_token = ts.borrow().peek_single().unwrap();
+                Ok(Parser { ts, curr_token, fatal_error: None, errors: Vec::new() })
             }
             Err(err) => Err(err),
         }
@@ -52,7 +54,7 @@ impl Parser {
 
     pub fn parse(&mut self, module: &str) -> Result<ParseResult, ParseError> {
 
-        let mut ast = AST::new(module);
+        let mut ast = Module::new(module);
 
         loop {
             match self.parse_stmt() {
@@ -61,6 +63,7 @@ impl Parser {
                     if self.is_end() {
                         break;
                     }
+                    continue;
                 },
             }
         }
@@ -78,18 +81,19 @@ impl Parser {
     }
 
     fn expect_peek(&mut self, expected: TokenKind) {
-        let actual = self.ts.borrow_mut().peek_single().unwrap().kind;
+        let actual = self.peek_kind();
         if actual != expected {
             self.set_fatal_error(UnexpectedToken(actual))
         }
     }
 
     fn bump(&mut self) {
-        self.ts.borrow_mut().bump();
+        self.next();
     }
 
     fn eat(&mut self, check: TokenKind) -> bool {
-        if self.peek().kind == check {
+        let peek = self.peek_kind();
+        if peek == check {
             self.bump();
             true
         } else {
@@ -101,8 +105,23 @@ impl Parser {
         self.ts.borrow().peek_single().unwrap()
     }
 
+    fn peek_kind(&self) -> TokenKind {
+        self.peek().kind
+    }
+
     fn next(&mut self) -> Token {
-        self.ts.borrow_mut().next_single().unwrap()
+        let next = self.ts.borrow_mut().next_single().unwrap();
+        self.curr_token = next.clone();
+        next
+    }
+
+    fn next_kind(&mut self) -> TokenKind {
+        self.next().kind
+    }
+
+    fn advance_to_end(&mut self) {
+        self.ts.borrow_mut().end();
+        self.curr_token = self.ts.borrow().peek_single().unwrap();
     }
 
     fn push_error(&mut self, err: ParseErrorKind) {
@@ -113,10 +132,6 @@ impl Parser {
         self.fatal_error = Some(ParseError { kind: err });
         self.advance_to_end();
 
-    }
-
-    fn advance_to_end(&mut self) {
-        self.ts.borrow_mut().end()
     }
 
     fn is_end(&self) -> bool {
