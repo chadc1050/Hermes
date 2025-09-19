@@ -11,6 +11,7 @@ impl Parser {
         expr
     }
 
+    /// Section 13 [Expression](https://tc39.es/ecma262/#sec-ecmascript-language-expressions)
     pub(crate) fn parse_expr(&mut self) -> ExprKind {
         match self.next_kind() {
             TokenKind::Id(first_id) => {

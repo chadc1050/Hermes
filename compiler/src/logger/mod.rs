@@ -1,6 +1,6 @@
 use clap::ValueEnum;
 
-static mut LOGLEVEL: LogLevel = LogLevel::Info;
+pub static mut LOGLEVEL: LogLevel = LogLevel::Info;
 
 pub fn set_log_level(log_level: LogLevel) {
     unsafe {
@@ -44,7 +44,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {
-        if logger::enabled(LogLevel::Info) {
+        if logger::enabled(logger::LogLevel::Info) {
             println!("[INFO] {}", format!($($arg)*));
         }
     }

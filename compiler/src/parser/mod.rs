@@ -135,6 +135,6 @@ impl Parser {
     }
 
     fn is_end(&self) -> bool {
-        self.ts.borrow().has_next()
+        !self.ts.borrow().has_next()
     }
 }
