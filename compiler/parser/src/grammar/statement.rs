@@ -1,10 +1,10 @@
-use crate::parser::ast::DeclKind::Lexical;
-use crate::parser::ast::LexicalKind::{Const, Let};
-use crate::parser::ast::{BlockStmt, BreakStmt, BreakableStmtKind, ConstDecl, ContinueStmt, DebugStmt, EmptyStmt, ExprKind, ExprStmt, IfStmt, LetDecl, ReturnStmt, StmtKind, SwitchStmt, ThrowStmt, TryStmt, WithStmt};
-use crate::parser::ParseErrorKind::UnexpectedToken;
-use crate::parser::Parser;
-use crate::parser::token::{BraceKind, KeywordKind, OpKind, PuncKind, TokenKind};
-use crate::parser::token::TokenKind::Keyword;
+use crate::ast::DeclKind::Lexical;
+use crate::ast::LexicalKind::{Const, Let};
+use crate::ast::{BlockStmt, BreakStmt, BreakableStmtKind, ConstDecl, ContinueStmt, DebugStmt, EmptyStmt, ExprKind, ExprStmt, IfStmt, LetDecl, ReturnStmt, StmtKind, SwitchStmt, ThrowStmt, TryStmt, WithStmt};
+use crate::ParseErrorKind::UnexpectedToken;
+use crate::Parser;
+use crate::token::{BraceKind, KeywordKind, OpKind, PuncKind, TokenKind};
+use crate::token::TokenKind::Keyword;
 
 impl Parser {
 

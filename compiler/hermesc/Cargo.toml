@@ -1,0 +1,13 @@
+[package]
+name = "hermesc"
+version = "0.0.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+hermesc_llvm = { path = "../llvm" }
+hermesc_parser = { path = "../parser" }
+
+clap = { version = "4.5.46", features = ["derive"] }
+inkwell = { version = "0.6.0", features = ["llvm18-1"]}
+serde_json = { version = "1.0.143" }

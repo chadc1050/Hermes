@@ -1,5 +1,5 @@
 use serde::Serialize;
-use crate::parser::token::{KeywordKind, LitKind};
+use crate::token::{KeywordKind, LitKind};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Module {

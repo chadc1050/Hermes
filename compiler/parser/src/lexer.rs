@@ -353,7 +353,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::token::{BooleanKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+    use crate::token::{BooleanKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 
     use super::Lexer;
 

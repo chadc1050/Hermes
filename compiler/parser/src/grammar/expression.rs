@@ -1,7 +1,7 @@
-use crate::parser::ast::{AdditiveExpr, ExprKind, PrimaryExprKind};
-use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
-use crate::parser::Parser;
-use crate::parser::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+use crate::ast::{AdditiveExpr, ExprKind, PrimaryExprKind};
+use crate::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
+use crate::Parser;
+use crate::token::{KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 
 impl Parser {
     pub(crate) fn parse_paren_expr(&mut self) -> ExprKind {

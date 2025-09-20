@@ -1,14 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use crate::parser::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, LetDecl, PrimaryExprKind, StmtKind, Module};
-use crate::parser::ast::DeclKind::Lexical;
-use crate::parser::ast::LexicalKind::{Const, Let};
-use crate::parser::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
-use crate::parser::lexer::LexerError;
-use crate::parser::ParseErrorKind::UnexpectedToken;
-use crate::parser::reader::Reader;
-use crate::parser::token::{BraceKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, Token, TokenKind};
-use crate::parser::token::TokenKind::Keyword;
+use crate::ast::{AdditiveExpr, BlockStmt, ConstDecl, ExprKind, IfStmt, LetDecl, PrimaryExprKind, StmtKind, Module};
+use crate::ast::DeclKind::Lexical;
+use crate::ast::LexicalKind::{Const, Let};
+use crate::ast::PrimaryExprKind::{Id, Lit, RegExLiteral};
+use crate::lexer::LexerError;
+use crate::ParseErrorKind::UnexpectedToken;
+use crate::reader::Reader;
+use crate::token::{BraceKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, Token, TokenKind};
+use crate::token::TokenKind::Keyword;
 use self::lexer::Lexer;
 
 mod reader;
