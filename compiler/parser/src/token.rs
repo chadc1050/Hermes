@@ -167,9 +167,12 @@ pub fn map_keyword(keyword_str: &str) -> Option<KeywordKind> {
 pub enum PuncKind {
     Brace(BraceKind),
     Bracket(BracketKind),
+    Colon,
+    Comma,
     /// .
     Dot,
     Op(OpKind),
+    Question,
     Parentheses(ParenthesesKind),
     /// ;
     SemiColon,
@@ -262,7 +265,7 @@ pub enum OpKind {
     /// &
     BitAnd,
     /// &=
-    BitAndAssing,
+    BitAndAssign,
     /// &&
     And,
     /// &&=

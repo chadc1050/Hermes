@@ -1,6 +1,7 @@
-use crate::ast::DeclKind::Lexical;
+use crate::ast::DeclKind::{Class, Lexical};
 use crate::ast::LexicalKind::{Const, Let};
 use crate::ast::{BlockStmt, BreakStmt, BreakableStmtKind, ConstDecl, ContinueStmt, DebugStmt, EmptyStmt, ExprKind, ExprStmt, IfStmt, LetDecl, ReturnStmt, StmtKind, SwitchStmt, ThrowStmt, TryStmt, WithStmt};
+use crate::ast::StmtKind::Expression;
 use crate::ParseErrorKind::UnexpectedToken;
 use crate::Parser;
 use crate::token::{BraceKind, KeywordKind, OpKind, PuncKind, TokenKind};
@@ -17,6 +18,7 @@ impl Parser {
             TokenKind::Keyword(k) => {
                 match k {
                     KeywordKind::Break => Some(StmtKind::Break(self.parse_break_stmt())),
+                    KeywordKind::Class => Some(StmtKind::Decl(Class(self.parse_class_stmt()))),
                     KeywordKind::Const => Some(StmtKind::Decl(Lexical(Const(self.parse_const_decl_stmt())))),
                     KeywordKind::Continue => Some(StmtKind::Continue(self.parse_continue_stmt())),
                     KeywordKind::Debugger => Some(StmtKind::Debugger(self.parse_debugger_stmt())),
@@ -24,20 +26,21 @@ impl Parser {
                     KeywordKind::If => Some(StmtKind::If(self.parse_if_stmt())),
                     KeywordKind::Return => Some(StmtKind::Return(self.parse_return_stmt())),
                     KeywordKind::Switch => Some(StmtKind::Breakable(BreakableStmtKind::Switch(self.parse_switch_stmt()))),
+                    KeywordKind::This => Some(StmtKind::Expression(self.parse_expr_stmt())),
                     KeywordKind::Throw => Some(StmtKind::Throw(self.parse_throw_stmt())),
-                    _ => todo!(),
+                    _ => Some(StmtKind::Expression(self.parse_expr_stmt())),
                 }
             }
             TokenKind::LineTerminator(_) => {
                 self.bump();
                 None
             }
-            TokenKind::Lit(_) => todo!(),
+            TokenKind::Lit(_) => Some(StmtKind::Expression(self.parse_expr_stmt())),
             TokenKind::Punc(punc) => {
                 match punc {
                     PuncKind::SemiColon => Some(StmtKind::Empty(self.parse_empty_stmt())),
                     PuncKind::Brace(BraceKind::Left) => Some(StmtKind::Block(self.parse_block_stmt())),
-                    _ => todo!()
+                    _ => Some(StmtKind::Expression(self.parse_expr_stmt())),
                 }
             }
             TokenKind::Unicode(_) => {
@@ -136,7 +139,7 @@ impl Parser {
     pub(crate) fn parse_expr_stmt(&mut self) -> ExprStmt {
         let expr = self.parse_expr();
         self.eat(TokenKind::Punc(PuncKind::SemiColon));
-        ExprStmt { expr }
+        ExprStmt(expr)
     }
 
     /// Section 14.6 [If Statement](https://tc39.es/ecma262/#sec-if-statement)

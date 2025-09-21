@@ -120,7 +120,7 @@ impl Lexer {
                                     None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::And)), pos)),
                                 }
                             }
-                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAndAssing)), pos)),
+                            '=' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAndAssign)), pos)),
                             _ => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), pos)),
                         },
                         None => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::BitAnd)), pos)),
@@ -242,10 +242,12 @@ impl Lexer {
                             '.' => Ok(Token::new(TokenKind::Punc(PuncKind::Op(OpKind::OptionalChain)), pos)),
                             _ => Err(LexerError{pos, error: LexerErrorKind::InvalidToken}),
                         },
-                        None => Err(LexerError{pos, error: LexerErrorKind::InvalidToken}),
+                        None => Ok(Token::new(TokenKind::Punc(PuncKind::Question), pos))
                     },
                     '.' => Ok(Token::new(TokenKind::Punc(PuncKind::Dot), pos)),
                     ';' => Ok(Token::new(TokenKind::Punc(PuncKind::SemiColon), pos)),
+                    ',' => Ok(Token::new(TokenKind::Punc(PuncKind::Comma), pos)),
+                    ':' => Ok(Token::new(TokenKind::Punc(PuncKind::Colon), pos)),
                     '[' => Ok(Token::new(TokenKind::Punc(PuncKind::Bracket(BracketKind::Left)), pos)),
                     ']' => Ok(Token::new(TokenKind::Punc(PuncKind::Bracket(BracketKind::Right)), pos)),
                     '{' => Ok(Token::new(TokenKind::Punc(PuncKind::Brace(BraceKind::Left)), pos)),
@@ -353,7 +355,7 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use crate::token::{BooleanKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
+    use crate::token::{BooleanKind, BracketKind, KeywordKind, LitKind, OpKind, ParenthesesKind, PuncKind, TokenKind};
 
     use super::Lexer;
 
@@ -378,9 +380,12 @@ mod tests {
 
     #[test]
     fn test_punctuation() {
-        let mut lexer = Lexer::init(";");
+        let mut lexer = Lexer::init(";,[]");
         let res = lexer.tokenize().unwrap();
         assert_eq!(TokenKind::Punc(PuncKind::SemiColon), res[0].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Comma), res[1].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Bracket(BracketKind::Left)), res[2].kind);
+        assert_eq!(TokenKind::Punc(PuncKind::Bracket(BracketKind::Right)), res[3].kind);
     }
 
     #[test]

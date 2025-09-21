@@ -17,6 +17,14 @@ impl Module {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
+pub enum ExprKind {
+    Primary(PrimaryExprKind),
+    Conditional(CondExpr),
+    Sequence(SeqExpr),
+    Yield(YieldExpr)
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum StmtKind {
     Block(BlockStmt),
     Decl(DeclKind),
@@ -43,7 +51,7 @@ pub enum BreakableStmtKind {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum DeclKind {
     Hoistable(HoistableDeclKind),
-    Class,
+    Class(Class),
     Lexical(LexicalKind)
 }
 
@@ -59,14 +67,6 @@ pub enum HoistableDeclKind {
     AsyncFunction,
     Generator,
     AsyncGenerator,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub enum ExprKind {
-    Primary(PrimaryExprKind),
-    Additive(Box<AdditiveExpr>),
-    Multiplicative,
-    ConditionalExpr(Box<CondExpr>)
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -105,7 +105,20 @@ pub struct AdditiveExpr {
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct CondExpr {
-    pub condition: ExprKind,
+    pub cond: Box<ExprKind>,
+    pub consequent: Box<ExprKind>,
+    pub alternate: Box<ExprKind>
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SeqExpr {
+    pub exprs: Vec<ExprKind>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YieldExpr {
+    pub delegate: bool,
+    pub arg: Option<Box<ExprKind>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -116,6 +129,11 @@ pub struct BlockStmt {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct BreakStmt {
     pub label: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Class {
+
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -130,9 +148,7 @@ pub struct DebugStmt;
 pub struct EmptyStmt;
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct ExprStmt {
-    pub expr: ExprKind,
-}
+pub struct ExprStmt(pub ExprKind);
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct IfStmt {
@@ -180,5 +196,5 @@ pub struct CatchClause {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SwitchCase {
     pub test: Option<ExprKind>,
-    pub body: Vec<Box<StmtKind>>,
+    pub body: Vec<StmtKind>,
 }

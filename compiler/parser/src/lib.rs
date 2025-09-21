@@ -80,6 +80,7 @@ impl Parser {
         self.bump();
     }
 
+    /// Checks the provided token against the next token in the stream. If they don't match, creates fatal error.
     fn expect_peek(&mut self, expected: TokenKind) {
         let actual = self.peek_kind();
         if actual != expected {
@@ -87,11 +88,17 @@ impl Parser {
         }
     }
 
+    /// Moves the cursor forward one position.
     fn bump(&mut self) {
         self.next();
     }
 
+    /// Checks the provided token against the next token in the stream. If matching, bumps the cursor one position.
     fn eat(&mut self, check: TokenKind) -> bool {
+        if self.is_end() {
+            return false;
+        }
+
         let peek = self.peek_kind();
         if peek == check {
             self.bump();
@@ -101,24 +108,35 @@ impl Parser {
         }
     }
 
+    /// Checks the provided token against the token at the current cursor position.
+    fn at(&mut self, check: TokenKind) -> bool {
+        let peek = self.peek_kind();
+        peek == check
+    }
+
+    /// Peek the next token in the stream.
     fn peek(&self) -> Token {
         self.ts.borrow().peek_single().unwrap()
     }
 
+    /// Peek the next token kind in the stream.
     fn peek_kind(&self) -> TokenKind {
         self.peek().kind
     }
 
+    /// Poll the next token in the stream.
     fn next(&mut self) -> Token {
         let next = self.ts.borrow_mut().next_single().unwrap();
         self.curr_token = next.clone();
         next
     }
 
+    /// Poll the next token kind in the stream.
     fn next_kind(&mut self) -> TokenKind {
         self.next().kind
     }
 
+    /// Advances to the end of the token stream.
     fn advance_to_end(&mut self) {
         self.ts.borrow_mut().end();
         self.curr_token = self.ts.borrow().peek_single().unwrap();
@@ -134,6 +152,7 @@ impl Parser {
 
     }
 
+    /// Checks if it is the end of the token stream.
     fn is_end(&self) -> bool {
         !self.ts.borrow().has_next()
     }

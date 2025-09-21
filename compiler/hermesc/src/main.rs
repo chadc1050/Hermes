@@ -2,7 +2,7 @@ use std::{fs, fs::File, io::Read};
 use std::io::Write;
 use std::path::Path;
 use std::process::exit;
-use clap::{command, Parser as CliParser, ValueEnum};
+use clap::{Parser as CliParser};
 use inkwell::context::Context;
 use hermesc_parser::Parser;
 use hermesc_parser::ast::Module;
