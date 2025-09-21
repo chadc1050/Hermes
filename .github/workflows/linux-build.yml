@@ -11,6 +11,8 @@ jobs:
    runs-on: "ubuntu-latest"
    steps:
      - uses: actions/checkout@v2
+     - name: Install LLVM 18
+       run: sudo apt install llvm-18
      - name: Prepare Toolchain
        run: rustup show
      - name: Build
