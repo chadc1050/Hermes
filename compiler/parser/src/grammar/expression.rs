@@ -37,9 +37,10 @@ impl Parser {
 
     /// Section 13.15 [Assignment Operator](https://tc39.es/ecma262/#prod-AssignmentExpression)
     pub(crate) fn parse_assign_expr(&mut self) -> ExprKind {
-        // yield
+
+        // [+Yield] YieldExpression[?In,?Await]
         if self.at(TokenKind::Keyword(KeywordKind::Yield)) {
-            self.parse_yield_expr();
+            return self.parse_yield_expr();
         }
 
         // TODO: Arrow function
@@ -147,7 +148,7 @@ impl Parser {
             );
 
         if not_assign_expr {
-            ExprKind::Yield(YieldExpr{ delegate, arg: None });
+            return ExprKind::Yield(YieldExpr{ delegate, arg: None });
         }
 
         ExprKind::Yield(YieldExpr{ delegate, arg: Some(Box::new(self.parse_assign_expr())) })

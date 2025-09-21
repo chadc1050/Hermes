@@ -127,7 +127,7 @@ impl Parser {
     /// Poll the next token in the stream.
     fn next(&mut self) -> Token {
         let next = self.ts.borrow_mut().next_single().unwrap();
-        self.curr_token = next.clone();
+        self.curr_token = self.peek();
         next
     }
 
@@ -154,6 +154,6 @@ impl Parser {
 
     /// Checks if it is the end of the token stream.
     fn is_end(&self) -> bool {
-        !self.ts.borrow().has_next()
+        !self.ts.borrow().has_next() || self.curr_token.kind == TokenKind::Eof
     }
 }
